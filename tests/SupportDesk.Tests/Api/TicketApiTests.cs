@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Allure.NUnit;
 using NUnit.Framework;
 using QaDotnetWorkflows.Tests.Database;
 using QaDotnetWorkflows.Tests.Fixtures;
@@ -10,6 +11,7 @@ using QaDotnetWorkflows.Tests.TestData;
 namespace QaDotnetWorkflows.Tests.Api;
 
 [TestFixture]
+[AllureNUnit]
 [Category("Api")]
 public class TicketApiTests : ApiTest
 {

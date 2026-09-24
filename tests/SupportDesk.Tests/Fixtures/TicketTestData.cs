@@ -48,6 +48,10 @@ public class TicketTestData
             {
                 failures.Add($"{id}: {exception.Message}");
             }
+            catch (TaskCanceledException exception)
+            {
+                failures.Add($"{id}: {exception.Message}");
+            }
         }
         Assert.That(failures, Is.Empty, "Could not clean up test tickets.");
     }

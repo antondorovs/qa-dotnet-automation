@@ -10,8 +10,12 @@ async function request(path, options = {}) {
   if (response.status === 204) return null;
   const body = await response.json();
   if (!response.ok) {
-    const errors = body.errors ? Object.values(body.errors).flat().join(" ") : null;
-    throw new Error(errors || body.error || "The request could not be completed.");
+    const errors = body.errors
+      ? Object.values(body.errors).flat().join(" ")
+      : null;
+    throw new Error(
+      errors || body.error || "The request could not be completed.",
+    );
   }
   return body;
 }
@@ -92,10 +96,16 @@ async function loadComments() {
 async function changeStatus(status, button) {
   button.disabled = true;
   try {
-    await request(`/api/tickets/${currentTicket.id}/status`, { method: "PATCH", body: JSON.stringify({ status }) });
+    await request(`/api/tickets/${currentTicket.id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    });
     await loadDetail(currentTicket.id);
-  } catch (error) { showError(error); }
-  finally { button.disabled = false; }
+  } catch (error) {
+    showError(error);
+  } finally {
+    button.disabled = false;
+  }
 }
 
 async function route() {
@@ -112,7 +122,11 @@ async function route() {
 
 byId("filters").addEventListener("submit", async (event) => {
   event.preventDefault();
-  try { await loadTickets(); } catch (error) { showError(error); }
+  try {
+    await loadTickets();
+  } catch (error) {
+    showError(error);
+  }
 });
 
 byId("ticket-form").addEventListener("submit", async (event) => {
@@ -127,10 +141,17 @@ byId("ticket-form").addEventListener("submit", async (event) => {
   const button = event.submitter;
   button.disabled = true;
   try {
-    const ticket = await request(editingId ? `/api/tickets/${editingId}` : "/api/tickets", {
-      method: editingId ? "PUT" : "POST",
-      body: JSON.stringify({ title, description: byId("ticket-description").value, priority: byId("ticket-priority").value }),
-    });
+    const ticket = await request(
+      editingId ? `/api/tickets/${editingId}` : "/api/tickets",
+      {
+        method: editingId ? "PUT" : "POST",
+        body: JSON.stringify({
+          title,
+          description: byId("ticket-description").value,
+          priority: byId("ticket-priority").value,
+        }),
+      },
+    );
     if (location.hash === `#tickets/${ticket.id}`) await loadDetail(ticket.id);
     else location.hash = `#tickets/${ticket.id}`;
   } catch (error) {
@@ -141,10 +162,18 @@ byId("ticket-form").addEventListener("submit", async (event) => {
 });
 
 byId("edit").addEventListener("click", () => openForm(currentTicket));
-byId("start-work").addEventListener("click", (event) => changeStatus("InProgress", event.currentTarget));
-byId("resolve").addEventListener("click", (event) => changeStatus("Resolved", event.currentTarget));
-byId("delete").addEventListener("click", () => byId("delete-dialog").showModal());
-byId("cancel-delete").addEventListener("click", () => byId("delete-dialog").close());
+byId("start-work").addEventListener("click", (event) =>
+  changeStatus("InProgress", event.currentTarget),
+);
+byId("resolve").addEventListener("click", (event) =>
+  changeStatus("Resolved", event.currentTarget),
+);
+byId("delete").addEventListener("click", () =>
+  byId("delete-dialog").showModal(),
+);
+byId("cancel-delete").addEventListener("click", () =>
+  byId("delete-dialog").close(),
+);
 byId("confirm-delete").addEventListener("click", async () => {
   try {
     await request(`/api/tickets/${currentTicket.id}`, { method: "DELETE" });
@@ -161,18 +190,24 @@ byId("comment-form").addEventListener("submit", async (event) => {
   button.disabled = true;
   try {
     await request(`/api/tickets/${currentTicket.id}/comments`, {
-      method: "POST", body: JSON.stringify({ body: byId("comment-body").value }),
+      method: "POST",
+      body: JSON.stringify({ body: byId("comment-body").value }),
     });
     byId("comment-body").value = "";
     await loadComments();
-  } catch (error) { showError(error); }
-  finally { button.disabled = false; }
+  } catch (error) {
+    showError(error);
+  } finally {
+    button.disabled = false;
+  }
 });
 byId("cancel").addEventListener("click", async () => {
   try {
     if (editingId) await loadDetail(editingId);
     else location.hash = "#tickets";
-  } catch (error) { showError(error); }
+  } catch (error) {
+    showError(error);
+  }
 });
 window.addEventListener("hashchange", () => route().catch(showError));
 route().catch(showError);

@@ -1,5 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
+using Allure.Net.Commons;
+using Allure.NUnit;
 using Microsoft.Playwright;
 using NUnit.Framework;
 using QaDotnetWorkflows.Tests.Database;
@@ -10,6 +12,7 @@ using QaDotnetWorkflows.Tests.TestData;
 namespace QaDotnetWorkflows.Tests.Workflows;
 
 [TestFixture]
+[AllureNUnit]
 [Category("Ui")]
 [Category("Workflow")]
 public class TicketActionTests : UiTest
@@ -45,20 +48,27 @@ public class TicketActionTests : UiTest
     [Category("Smoke")]
     public async Task StartingWorkUpdatesApiAndDatabase()
     {
-        var ticket = await Data.CreateAsync(TicketData.NewTicket());
-        await Details.OpenAsync(ticket.Id);
-        await Expect(Details.Status).ToHaveTextAsync("Open");
+        var ticket = await AllureApi.Step("Prepare an open ticket through API",
+            () => Data.CreateAsync(TicketData.NewTicket()));
 
-        await Details.StartWorkAsync();
-        await Expect(Details.Status).ToHaveTextAsync("InProgress");
+        await AllureApi.Step("Start work in the browser", async () =>
+        {
+            await Details.OpenAsync(ticket.Id);
+            await Expect(Details.Status).ToHaveTextAsync("Open");
+            await Details.StartWorkAsync();
+            await Expect(Details.Status).ToHaveTextAsync("InProgress");
+        });
 
-        using var response = await Api.GetAsync(ticket.Id);
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-        var saved = await response.Content.ReadFromJsonAsync<TicketResponse>()
-            ?? throw new AssertionException("Get response was empty.");
-        Assert.That(saved.Status, Is.EqualTo("InProgress"));
-        var database = new TicketDatabase(Settings.DatabaseConnection);
-        Assert.That(await database.GetStatusAsync(ticket.Id), Is.EqualTo("InProgress"));
+        await AllureApi.Step("Verify the saved status through API and PostgreSQL", async () =>
+        {
+            using var response = await Api.GetAsync(ticket.Id);
+            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+            var saved = await response.Content.ReadFromJsonAsync<TicketResponse>()
+                ?? throw new AssertionException("Get response was empty.");
+            Assert.That(saved.Status, Is.EqualTo("InProgress"));
+            var database = new TicketDatabase(Settings.DatabaseConnection);
+            Assert.That(await database.GetStatusAsync(ticket.Id), Is.EqualTo("InProgress"));
+        });
     }
 
     [Test]

@@ -1,3 +1,4 @@
+using Allure.NUnit;
 using Microsoft.Playwright;
 using NUnit.Framework;
 using QaDotnetWorkflows.Tests.Database;
@@ -7,6 +8,7 @@ using QaDotnetWorkflows.Tests.TestData;
 namespace QaDotnetWorkflows.Tests.Ui;
 
 [TestFixture]
+[AllureNUnit]
 [Category("Ui")]
 public class TicketUiTests : UiTest
 {

@@ -1,0 +1,30 @@
+name: UI and API checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - name: Run container checks
+        shell: bash
+        run: |
+          export POSTGRES_PASSWORD="$(openssl rand -hex 24)"
+          sh scripts/check.sh
+      - name: Upload reports and diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-artifacts
+          path: artifacts/
+          retention-days: 14
+          if-no-files-found: warn

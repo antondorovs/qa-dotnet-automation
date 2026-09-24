@@ -1,0 +1,6 @@
+.tools/
+artifacts/
+**/bin/
+**/obj/
+**/packages.lock.json
+package-lock.json

@@ -1,17 +1,45 @@
 name: qa-dotnet-workflows
 services:
   db:
-    image: postgres:17.6-alpine
+    build: ./database
     environment:
       POSTGRES_DB: supportdesk
       POSTGRES_USER: supportdesk
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env or the environment}
     ports:
       - "127.0.0.1:5438:5432"
-    volumes:
-      - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+    tmpfs:
+      - /var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U supportdesk -d supportdesk"]
       interval: 2s
       timeout: 3s
       retries: 30
+  app:
+    build:
+      context: .
+      dockerfile: app/SupportDesk/Dockerfile
+    environment:
+      ConnectionStrings__SupportDesk: Host=db;Database=supportdesk;Username=supportdesk;Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    ports:
+      - "127.0.0.1:5088:8080"
+    networks:
+      default:
+        aliases:
+          - supportdesk.test
+    depends_on:
+      db:
+        condition: service_healthy
+  tests:
+    profiles: [test]
+    build:
+      context: .
+      dockerfile: docker/tests.Dockerfile
+    environment:
+      QA_BaseUrl: http://supportdesk.test:8080
+      QA_DatabaseConnection: Host=db;Database=supportdesk;Username=supportdesk;Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      QA_ArtifactsDirectory: /work/artifacts
+    shm_size: 1gb
+    depends_on:
+      app:
+        condition: service_healthy

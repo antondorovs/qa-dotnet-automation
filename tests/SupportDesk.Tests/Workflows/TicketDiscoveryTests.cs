@@ -1,4 +1,5 @@
 using System.Net;
+using Allure.NUnit;
 using NUnit.Framework;
 using QaDotnetWorkflows.Tests.Fixtures;
 using QaDotnetWorkflows.Tests.TestData;
@@ -6,6 +7,7 @@ using QaDotnetWorkflows.Tests.TestData;
 namespace QaDotnetWorkflows.Tests.Workflows;
 
 [TestFixture]
+[AllureNUnit]
 [Category("Ui")]
 [Category("Workflow")]
 public class TicketDiscoveryTests : UiTest

@@ -1,44 +1,100 @@
 # QA .NET Workflows
 
-UI and API automation for Support Desk, a local ticket application backed by PostgreSQL.
-Tests use C#, .NET 10, NUnit, Microsoft Playwright for .NET and HttpClient.
+C# automation for Support Desk: prepare tickets through API, act in the browser,
+verify saved state through API and PostgreSQL. The suite has 15 scenarios:
+5 API, 3 UI and 7 mixed workflows. Chromium is the default browser; tests run sequentially without retries.
 
-## Structure
+## Stack and structure
 
-- `app/SupportDesk` — HTTP application and persistence.
-- `tests/SupportDesk.Tests` — API/UI tests, Page Objects, clients, models, fixtures and test data.
-- `database/schema.sql` — PostgreSQL schema.
+.NET 10, NUnit, Microsoft Playwright for .NET, HttpClient, PostgreSQL 17,
+Npgsql, Allure, Docker Compose, GitHub Actions and GitLab CI.
 
-## Run
+| Path                                                               | Contents                                                        |
+| ------------------------------------------------------------------ | --------------------------------------------------------------- |
+| `app/SupportDesk/`                                                 | ASP.NET Core API, SQL persistence and a small browser interface |
+| `tests/SupportDesk.Tests/Api/`, `Ui/`, `Workflows/`                | API contracts, browser behaviour and cross-layer scenarios      |
+| `tests/SupportDesk.Tests/Pages/`, `Clients/`, `Models/`            | Page Objects, HttpClient wrapper and independent test models    |
+| `tests/SupportDesk.Tests/Fixtures/`, `TestData/`, `Configuration/` | Lifecycle, unique data, JSON cases and settings                 |
+| `tests/SupportDesk.Tests/Database/`, `Reporting/`                  | SQL assertions and diagnostic attachments                       |
+| `database/`, `docker/`, `scripts/`                                 | Schema, test image and execution commands                       |
 
-Requires .NET 10 SDK and Docker Compose. Copy `.env.example` to `.env` and set a local password.
+Titles contain 1–120 characters; priorities are `Low`, `Normal`, `High`.
+Status changes follow `Open → InProgress → Resolved`; invalid transitions return `409`.
+Invalid input returns `400` with field errors and must not insert a row.
+Tests own their data and remove it in teardown, including after failures.
+
+## Run in Docker
+
+Requires Docker with Compose. Copy `.env.example` to `.env` and replace the password.
 
 ```powershell
-docker compose up -d --wait db
-$env:ConnectionStrings__SupportDesk = 'Host=localhost;Port=5438;Database=supportdesk;Username=supportdesk;Password=<local-password>'
-dotnet run --project app/SupportDesk --urls http://localhost:5088
+pwsh scripts/check.ps1
 ```
 
-In another terminal:
+Linux/macOS: `sh scripts/check.sh`. The command builds the images, checks formatting,
+runs all tests, saves `artifacts/`, then removes this project's containers and disposable database.
+It replaces previous artifacts. No external application or account is needed by the tests.
+
+## Run tests locally
+
+Requires SDK **10.0.401** (or a newer patch in the same feature band) and PowerShell 7.
 
 ```powershell
-$env:QA_DatabaseConnection = 'Host=localhost;Port=5438;Database=supportdesk;Username=supportdesk;Password=<local-password>'
+docker compose up -d --build --wait app
+dotnet restore --locked-mode
 dotnet build
 pwsh tests/SupportDesk.Tests/bin/Debug/net10.0/playwright.ps1 install chromium
+$env:QA_DatabaseConnection = 'Host=localhost;Port=5438;Database=supportdesk;Username=supportdesk;Password=<local-password>'
 dotnet test --settings tests/SupportDesk.Tests/test.runsettings
-dotnet format --verify-no-changes
 ```
 
-`QA_BaseUrl` and `QA_ApiBaseUrl` override `testsettings.json`. Each test removes its own tickets.
-
-The API accepts priorities `Low`, `Normal`, `High`. Titles contain 1–120 characters.
-Allowed status changes are `Open → InProgress → Resolved`; other transitions return `409`.
-Invalid input returns `400` with field errors and must not create a database row.
-
-Filter tests with `--filter TestCategory=Api` or `--filter TestCategory=Ui`.
-`--filter TestCategory=Workflow` selects API → UI and API → UI → API scenarios.
+Append `--filter TestCategory=Api`, `--filter TestCategory=Ui`,
+`--filter TestCategory=Workflow` or `--filter TestCategory=Smoke` for a subset.
 For a visible browser append `-- Playwright.LaunchOptions.Headless=false`.
+The application is available at `http://localhost:5088`.
 
-The suite has 15 scenarios: five API, three UI and seven mixed workflows.
-Workflows cover API-prepared discovery, priority changes, status changes, comments and deletion.
-Input rejection and status persistence also include direct PostgreSQL assertions.
+## Configuration
+
+`testsettings.json` supplies the local URL; `QA_` environment variables take precedence.
+
+| Variable                                   | Default / purpose                                            |
+| ------------------------------------------ | ------------------------------------------------------------ |
+| `QA_BaseUrl`                               | `http://localhost:5088`                                      |
+| `QA_ApiBaseUrl`                            | Same as `QA_BaseUrl`                                         |
+| `QA_DatabaseConnection`                    | Required by SQL assertions; provided automatically in Docker |
+| `QA_ActionTimeoutMs`, `QA_ExpectTimeoutMs` | `10000`, `5000`                                              |
+| `QA_ArtifactsDirectory`                    | Repository `artifacts/`; screenshot and trace destination    |
+| `POSTGRES_PASSWORD`                        | Local `.env` or environment; CI generates an ephemeral value |
+
+Browser options are in `test.runsettings`. Allure's destination is in `allureConfig.json`;
+`ALLURE_CONFIG` can select another configuration. Keep credentials out of tracked settings.
+
+## Reporting and checks
+
+Docker produces Allure HTML/results, TRX and service logs under `artifacts/`.
+Failed UI tests attach a screenshot and trace; API attachments include method, path,
+status and synthetic payloads without headers. Use synthetic data, since bodies and traces contain application content.
+NUnit assertions appear as Failed in Allure; Playwright exceptions appear as Broken. Both fail the run.
+
+For local report generation and web/config formatting, install Node.js 22+:
+
+```powershell
+npm.cmd ci
+npm.cmd run report
+npm.cmd run report:open
+dotnet format --verify-no-changes
+npm.cmd run format:check
+```
+
+Direct `dotnet test` runs append Allure results; clear `artifacts/allure-results` between independent runs.
+The Docker check starts with fresh results. Reports, browser downloads, build output and `.env` are ignored.
+
+## CI and publication
+
+GitHub Actions runs on pushes to `main`, pull requests and manual dispatch.
+GitLab CI runs on the default branch and merge requests; its runner must support privileged Docker-in-Docker.
+Both run `scripts/check.sh`, fail on check/test errors and retain diagnostics for 14 days, including failed runs.
+
+`origin` points to GitHub and `gitlab` to GitLab. From a clean `main`,
+`pwsh scripts/push.ps1` pushes the same commit to both and verifies their SHA values.
+A partial push fails explicitly and can be retried without rewriting history.

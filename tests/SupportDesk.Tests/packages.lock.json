@@ -2,6 +2,16 @@
   "version": 1,
   "dependencies": {
     "net10.0": {
+      "Allure.NUnit": {
+        "type": "Direct",
+        "requested": "[2.15.0, )",
+        "resolved": "2.15.0",
+        "contentHash": "qALmHBrEtrcyYP/QFPIGSIYoYeIb5XoVkXwDNFg23s9iLLuPQ7PHbTBwKL6d07oXtF0b5dU7VBUb4vRK/LeiAg==",
+        "dependencies": {
+          "Allure.Net.Commons": "2.15.0",
+          "NUnit": "3.13.3"
+        }
+      },
       "Microsoft.Extensions.Configuration.EnvironmentVariables": {
         "type": "Direct",
         "requested": "[10.0.12, )",
@@ -72,6 +82,21 @@
           "Microsoft.Testing.Extensions.VSTestBridge": "2.3.3",
           "Microsoft.Testing.Platform.MSBuild": "2.3.3"
         }
+      },
+      "Allure.Net.Commons": {
+        "type": "Transitive",
+        "resolved": "2.15.0",
+        "contentHash": "CbEuYafbLehdc5ncB2zY84mqvjZMiseFOgm4VNYV61lxQfPc7yj5GIrq2QjYi1yVbYDzELEnmm+miTl8984WDw==",
+        "dependencies": {
+          "AspectInjector": "2.8.1",
+          "MimeTypesMap": "1.0.9",
+          "Newtonsoft.Json": "13.0.4"
+        }
+      },
+      "AspectInjector": {
+        "type": "Transitive",
+        "resolved": "2.8.1",
+        "contentHash": "8BScDeaLazJVFaa2Tt9hoWLhllnxXP3Sew+l/vktdZEcgoPOsqhlDqe6GXJvy7xVkdICAbKFsrcDJ0cfrDR6Mg=="
       },
       "Microsoft.ApplicationInsights": {
         "type": "Transitive",
@@ -234,6 +259,16 @@
         "dependencies": {
           "Microsoft.TestPlatform.ObjectModel": "18.10.1"
         }
+      },
+      "MimeTypesMap": {
+        "type": "Transitive",
+        "resolved": "1.0.9",
+        "contentHash": "M0TuSCwL1a8QV0VKw8ysY4AIs6v/Aor3N7GXQeqgNlAvqjx9Kj9KxNd09Pg5RzpY1tCOU8mkrfYBi1Lxwj8quQ=="
+      },
+      "Newtonsoft.Json": {
+        "type": "Transitive",
+        "resolved": "13.0.4",
+        "contentHash": "pdgNNMai3zv51W5aq268sujXUyx7SNdE2bj1wZcWjAQrKMFZV260lbqYop1d2GM67JI1huLRwxo9ZqnfF/lC6A=="
       },
       "System.ComponentModel.Annotations": {
         "type": "Transitive",

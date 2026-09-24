@@ -1,0 +1,14 @@
+.git
+.tools
+.env
+.env.*
+node_modules
+artifacts
+**/bin
+**/obj
+**/TestResults
+**/allure-results
+**/allure-report
+**/testsettings.local.json
+.vs
+.idea

@@ -1,0 +1,26 @@
+stages: [test]
+
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
+
+tests:
+  stage: test
+  image: docker:29-cli
+  services:
+    - name: docker:29-dind
+      alias: docker
+      command: ["--mtu=1360"]
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  timeout: 25m
+  script:
+    - export POSTGRES_PASSWORD="$(head -c 24 /dev/urandom | od -An -tx1 | tr -d ' \n')"
+    - sh scripts/check.sh
+  artifacts:
+    when: always
+    paths:
+      - artifacts/
+    expire_in: 14 days

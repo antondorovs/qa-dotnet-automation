@@ -1,0 +1,17 @@
+{
+  "name": "qa-dotnet-workflows-tools",
+  "private": true,
+  "scripts": {
+    "format:check": "prettier --check .",
+    "format": "prettier --write .",
+    "report": "allure generate artifacts/allure-results --output artifacts/allure-report",
+    "report:open": "allure open artifacts/allure-report"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "allure": "3.18.0",
+    "prettier": "3.9.8"
+  }
+}
