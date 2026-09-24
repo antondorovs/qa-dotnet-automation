@@ -31,4 +31,9 @@ public class TicketsApiClient
     {
         return httpClient.PatchAsJsonAsync($"/api/tickets/{id}/status", new { status });
     }
+
+    public Task<HttpResponseMessage> GetCommentsAsync(Guid id)
+    {
+        return httpClient.GetAsync($"/api/tickets/{id}/comments");
+    }
 }

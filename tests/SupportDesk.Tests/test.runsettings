@@ -1,0 +1,14 @@
+<RunSettings>
+  <RunConfiguration>
+    <ResultsDirectory>artifacts/test-results</ResultsDirectory>
+  </RunConfiguration>
+  <NUnit>
+    <NumberOfTestWorkers>0</NumberOfTestWorkers>
+  </NUnit>
+  <Playwright>
+    <BrowserName>chromium</BrowserName>
+    <LaunchOptions>
+      <Headless>true</Headless>
+    </LaunchOptions>
+  </Playwright>
+</RunSettings>

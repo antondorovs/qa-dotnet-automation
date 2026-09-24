@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Support Desk</title>
+    <link rel="stylesheet" href="/styles.css">
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <header><a class="brand" href="#tickets">Support Desk</a><span>Customer operations</span></header>
+    <main>
+      <p id="error" role="alert" hidden></p>
+      <section id="list-view" hidden>
+        <div class="section-heading"><h1>Tickets</h1><a class="button" href="#new">New ticket</a></div>
+        <form id="filters" class="filters">
+          <label>Search tickets<input id="search" type="search" placeholder="Search by title"></label>
+          <label><span id="filter-priority-label">Filter by priority</span><select id="filter-priority" aria-labelledby="filter-priority-label"><option value="">All priorities</option><option>Low</option><option>Normal</option><option>High</option></select></label>
+          <label><span id="filter-status-label">Filter by status</span><select id="filter-status" aria-labelledby="filter-status-label"><option value="">All statuses</option><option>Open</option><option>InProgress</option><option>Resolved</option></select></label>
+          <button type="submit">Apply filters</button>
+        </form>
+        <p id="result-count" role="status"></p>
+        <table aria-label="Tickets">
+          <thead><tr><th>Title</th><th>Priority</th><th>Status</th></tr></thead>
+          <tbody id="ticket-rows"></tbody>
+        </table>
+        <p id="empty-list" hidden>No tickets match your filters.</p>
+      </section>
+      <section id="form-view" hidden>
+        <h1 id="form-heading">New ticket</h1>
+        <form id="ticket-form" novalidate>
+          <label>Title<input id="ticket-title" maxlength="120" required aria-describedby="title-error"></label>
+          <p id="title-error" class="field-error" hidden>Title must contain 1 to 120 characters.</p>
+          <label>Description<textarea id="ticket-description" maxlength="2000" rows="5"></textarea></label>
+          <label><span id="priority-label">Priority</span><select id="ticket-priority" aria-labelledby="priority-label"><option>Low</option><option selected>Normal</option><option>High</option></select></label>
+          <div class="actions"><button type="submit">Save ticket</button><button type="button" id="cancel" class="secondary">Cancel</button></div>
+        </form>
+      </section>
+      <section id="detail-view" hidden>
+        <a href="#tickets">Back to tickets</a>
+        <div class="section-heading"><h1 id="detail-title"></h1><button id="edit" class="secondary">Edit ticket</button></div>
+        <dl><dt>Status</dt><dd data-testid="ticket-status" id="detail-status"></dd><dt>Priority</dt><dd data-testid="ticket-priority" id="detail-priority"></dd></dl>
+        <h2>Description</h2><p id="detail-description" data-testid="ticket-description"></p>
+        <div class="actions"><button id="start-work">Start work</button><button id="resolve">Resolve ticket</button><button id="delete" class="secondary">Delete ticket</button></div>
+        <h2>Comments</h2>
+        <ul id="comments" aria-label="Comments"></ul>
+        <form id="comment-form">
+          <label>Comment<textarea id="comment-body" rows="3" required maxlength="2000"></textarea></label>
+          <button type="submit">Add comment</button>
+        </form>
+        <dialog id="delete-dialog" aria-labelledby="delete-heading">
+          <h2 id="delete-heading">Delete this ticket?</h2>
+          <p>The ticket and its comments will be removed.</p>
+          <div class="actions"><button id="confirm-delete">Confirm delete</button><button id="cancel-delete" class="secondary">Keep ticket</button></div>
+        </dialog>
+      </section>
+    </main>
+  </body>
+</html>
