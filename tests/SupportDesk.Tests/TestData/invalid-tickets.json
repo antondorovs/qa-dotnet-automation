@@ -1,0 +1,16 @@
+[
+  {
+    "Name": "BlankTitleIsRejectedWithoutInsertingATicket",
+    "Title": "   ",
+    "Priority": "Normal",
+    "ErrorField": "title",
+    "ErrorMessage": "Title must contain 1 to 120 characters."
+  },
+  {
+    "Name": "UnknownPriorityIsRejectedWithoutInsertingATicket",
+    "Title": "Priority validation",
+    "Priority": "Urgent",
+    "ErrorField": "priority",
+    "ErrorMessage": "Priority must be Low, Normal or High."
+  }
+]

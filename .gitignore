@@ -1,0 +1,16 @@
+.tools/
+.env
+.env.*
+!.env.example
+**/bin/
+**/obj/
+**/TestResults/
+artifacts/
+**/allure-results/
+**/allure-report/
+**/testsettings.local.json
+.vs/
+.idea/
+*.user
+*.log
+node_modules/
