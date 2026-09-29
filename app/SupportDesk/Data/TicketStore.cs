@@ -71,7 +71,8 @@ public class TicketStore
     {
         await using var command = dataSource.CreateCommand("""
             SELECT id, title, description, priority, status FROM tickets
-            WHERE ($1 = '' OR strpos(lower(title), lower($1)) > 0)
+            WHERE ($1 = '' OR strpos(lower(title), lower($1)) > 0
+                OR strpos(lower(description), lower($1)) > 0)
               AND ($2 = '' OR priority = $2)
               AND ($3 = '' OR status = $3)
             ORDER BY title, id

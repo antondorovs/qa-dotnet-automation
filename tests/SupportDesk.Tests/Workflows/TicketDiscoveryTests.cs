@@ -46,6 +46,20 @@ public class TicketDiscoveryTests : UiTest
     }
 
     [Test]
+    public async Task SearchFindsTextInTheTicketDescription()
+    {
+        var marker = $"account-{Guid.NewGuid():N}";
+        var request = TicketData.NewTicket();
+        request.Description = $"Customer cannot access {marker}";
+        await Data.CreateAsync(request);
+
+        await Tickets.OpenAsync();
+        await Tickets.FilterAsync($"  {marker.ToUpperInvariant()}  ");
+
+        await Expect(Tickets.TicketLinks).ToHaveTextAsync(new[] { request.Title });
+    }
+
+    [Test]
     public async Task PriorityAndStatusFiltersApplyTogether()
     {
         var prefix = $"Queue {Guid.NewGuid():N}";
