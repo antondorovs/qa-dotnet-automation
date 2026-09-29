@@ -73,8 +73,8 @@ public class TicketStore
             SELECT id, title, description, priority, status FROM tickets
             WHERE ($1 = '' OR strpos(lower(title), lower($1)) > 0
                 OR strpos(lower(description), lower($1)) > 0)
-              AND ($2 = '' OR priority = $2)
-              AND ($3 = '' OR status = $3)
+              AND ($2 = '' OR lower(priority) = lower($2))
+              AND ($3 = '' OR lower(status) = lower($3))
             ORDER BY title, id
             """);
         command.Parameters.AddWithValue(search);

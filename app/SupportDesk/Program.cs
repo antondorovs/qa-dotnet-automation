@@ -30,7 +30,10 @@ app.MapPost("/api/tickets", async (CreateTicketRequest request) =>
 });
 
 app.MapGet("/api/tickets", async (string? search, string? priority, string? status) =>
-    Results.Ok(await tickets.ListAsync(search?.Trim() ?? "", priority ?? "", status ?? "")));
+    Results.Ok(await tickets.ListAsync(
+        search?.Trim() ?? "",
+        priority?.Trim() ?? "",
+        status?.Trim() ?? "")));
 
 app.MapGet("/api/tickets/{id:guid}", async (Guid id) =>
 {

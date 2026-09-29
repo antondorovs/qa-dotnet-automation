@@ -105,4 +105,19 @@ public class TicketApiTests : ApiTest
             ?? throw new AssertionException("Get response was empty.");
         Assert.That(saved.Status, Is.EqualTo("Open"));
     }
+
+    [Test]
+    public async Task FiltersIgnoreCaseAndSurroundingSpaces()
+    {
+        var ticket = await Data.CreateAsync(TicketData.NewTicket("High"));
+        using var changed = await Api.ChangeStatusAsync(ticket.Id, "InProgress");
+        Assert.That(changed.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+
+        using var response = await Api.ListAsync(ticket.Title, "  high  ", "  inprogress  ");
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        var matches = await response.Content.ReadFromJsonAsync<List<TicketResponse>>()
+            ?? throw new AssertionException("List response was empty.");
+
+        Assert.That(matches.Select(match => match.Id), Is.EqualTo(new[] { ticket.Id }));
+    }
 }

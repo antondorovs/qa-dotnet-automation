@@ -23,6 +23,14 @@ public class TicketsApiClient
         return ApiDiagnostics.AttachAsync(httpClient.GetAsync($"/api/tickets/{id}"));
     }
 
+    public Task<HttpResponseMessage> ListAsync(string search, string priority, string status)
+    {
+        var query = $"search={Uri.EscapeDataString(search)}" +
+            $"&priority={Uri.EscapeDataString(priority)}" +
+            $"&status={Uri.EscapeDataString(status)}";
+        return ApiDiagnostics.AttachAsync(httpClient.GetAsync($"/api/tickets?{query}"));
+    }
+
     public Task<HttpResponseMessage> DeleteAsync(Guid id)
     {
         return ApiDiagnostics.AttachAsync(httpClient.DeleteAsync($"/api/tickets/{id}"));
