@@ -23,11 +23,12 @@ public class TicketsApiClient
         return ApiDiagnostics.AttachAsync(httpClient.GetAsync($"/api/tickets/{id}"));
     }
 
-    public Task<HttpResponseMessage> ListAsync(string search, string priority, string status)
+    public Task<HttpResponseMessage> ListAsync(string search, string priority, string status, string sort = "")
     {
         var query = $"search={Uri.EscapeDataString(search)}" +
             $"&priority={Uri.EscapeDataString(priority)}" +
-            $"&status={Uri.EscapeDataString(status)}";
+            $"&status={Uri.EscapeDataString(status)}" +
+            $"&sort={Uri.EscapeDataString(sort)}";
         return ApiDiagnostics.AttachAsync(httpClient.GetAsync($"/api/tickets?{query}"));
     }
 

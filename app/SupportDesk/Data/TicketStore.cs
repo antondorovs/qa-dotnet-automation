@@ -67,7 +67,7 @@ public class TicketStore
         return await command.ExecuteNonQueryAsync() == 1;
     }
 
-    public async Task<List<Ticket>> ListAsync(string search, string priority, string status)
+    public async Task<List<Ticket>> ListAsync(string search, string priority, string status, string sort)
     {
         await using var command = dataSource.CreateCommand("""
             SELECT id, title, description, priority, status FROM tickets
@@ -75,11 +75,17 @@ public class TicketStore
                 OR strpos(lower(description), lower($1)) > 0)
               AND ($2 = '' OR lower(priority) = lower($2))
               AND ($3 = '' OR lower(status) = lower($3))
-            ORDER BY title, id
+            ORDER BY
+              CASE WHEN $4 = 'priority' THEN
+                CASE priority WHEN 'High' THEN 1 WHEN 'Normal' THEN 2 ELSE 3 END
+              END,
+              title,
+              id
             """);
         command.Parameters.AddWithValue(search);
         command.Parameters.AddWithValue(priority);
         command.Parameters.AddWithValue(status);
+        command.Parameters.AddWithValue(sort);
         await using var reader = await command.ExecuteReaderAsync();
         var result = new List<Ticket>();
         while (await reader.ReadAsync())

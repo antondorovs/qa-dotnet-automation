@@ -120,4 +120,24 @@ public class TicketApiTests : ApiTest
 
         Assert.That(matches.Select(match => match.Id), Is.EqualTo(new[] { ticket.Id }));
     }
+
+    [Test]
+    public async Task PrioritySortPlacesUrgentTicketsFirst()
+    {
+        var marker = $"Priority order {Guid.NewGuid():N}";
+        foreach (var priority in new[] { "Low", "High", "Normal" })
+        {
+            var request = TicketData.NewTicket(priority);
+            request.Title = $"{marker} {priority}";
+            await Data.CreateAsync(request);
+        }
+
+        using var response = await Api.ListAsync(marker, "", "", "priority");
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        var matches = await response.Content.ReadFromJsonAsync<List<TicketResponse>>()
+            ?? throw new AssertionException("List response was empty.");
+
+        Assert.That(matches.Select(match => match.Priority),
+            Is.EqualTo(new[] { "High", "Normal", "Low" }));
+    }
 }

@@ -29,11 +29,12 @@ app.MapPost("/api/tickets", async (CreateTicketRequest request) =>
     return Results.Created($"/api/tickets/{ticket.Id}", ticket);
 });
 
-app.MapGet("/api/tickets", async (string? search, string? priority, string? status) =>
+app.MapGet("/api/tickets", async (string? search, string? priority, string? status, string? sort) =>
     Results.Ok(await tickets.ListAsync(
         search?.Trim() ?? "",
         priority?.Trim() ?? "",
-        status?.Trim() ?? "")));
+        status?.Trim() ?? "",
+        sort?.Trim().ToLowerInvariant() ?? "")));
 
 app.MapGet("/api/tickets/{id:guid}", async (Guid id) =>
 {
