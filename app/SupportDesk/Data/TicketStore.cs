@@ -79,6 +79,9 @@ public class TicketStore
               CASE WHEN $4 = 'priority' THEN
                 CASE priority WHEN 'High' THEN 1 WHEN 'Normal' THEN 2 ELSE 3 END
               END,
+              CASE WHEN $4 = 'status' THEN
+                CASE status WHEN 'Open' THEN 1 WHEN 'InProgress' THEN 2 ELSE 3 END
+              END,
               title,
               id
             """);

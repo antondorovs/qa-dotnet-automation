@@ -140,4 +140,35 @@ public class TicketApiTests : ApiTest
         Assert.That(matches.Select(match => match.Priority),
             Is.EqualTo(new[] { "High", "Normal", "Low" }));
     }
+
+    [Test]
+    public async Task StatusSortFollowsTheWorkflowOrder()
+    {
+        var marker = $"Status order {Guid.NewGuid():N}";
+        var open = TicketData.NewTicket();
+        open.Title = $"{marker} open";
+        await Data.CreateAsync(open);
+
+        var active = TicketData.NewTicket();
+        active.Title = $"{marker} active";
+        var activeTicket = await Data.CreateAsync(active);
+        using var activated = await Api.ChangeStatusAsync(activeTicket.Id, "InProgress");
+        Assert.That(activated.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+
+        var resolved = TicketData.NewTicket();
+        resolved.Title = $"{marker} resolved";
+        var resolvedTicket = await Data.CreateAsync(resolved);
+        using var started = await Api.ChangeStatusAsync(resolvedTicket.Id, "InProgress");
+        Assert.That(started.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        using var completed = await Api.ChangeStatusAsync(resolvedTicket.Id, "Resolved");
+        Assert.That(completed.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+
+        using var response = await Api.ListAsync(marker, "", "", "status");
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        var matches = await response.Content.ReadFromJsonAsync<List<TicketResponse>>()
+            ?? throw new AssertionException("List response was empty.");
+
+        Assert.That(matches.Select(match => match.Status),
+            Is.EqualTo(new[] { "Open", "InProgress", "Resolved" }));
+    }
 }
