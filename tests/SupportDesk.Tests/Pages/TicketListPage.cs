@@ -16,11 +16,12 @@ public class TicketListPage
     public ILocator TicketLink(string title) => page.GetByRole(AriaRole.Link, new() { Name = title, Exact = true });
     public ILocator TicketLinks => page.GetByRole(AriaRole.Table, new() { Name = "Tickets", Exact = true }).GetByRole(AriaRole.Link);
 
-    public async Task FilterAsync(string search = "", string priority = "", string status = "")
+    public async Task FilterAsync(string search = "", string priority = "", string status = "", string sort = "")
     {
         await page.GetByLabel("Search tickets", new() { Exact = true }).FillAsync(search);
         await page.GetByLabel("Filter by priority", new() { Exact = true }).SelectOptionAsync(priority);
         await page.GetByLabel("Filter by status", new() { Exact = true }).SelectOptionAsync(status);
+        await page.GetByLabel("Sort tickets", new() { Exact = true }).SelectOptionAsync(sort);
         await page.GetByRole(AriaRole.Button, new() { Name = "Apply filters" }).ClickAsync();
     }
 }

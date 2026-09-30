@@ -24,7 +24,7 @@
             >Search tickets<input
               id="search"
               type="search"
-              placeholder="Search by title"
+              placeholder="Search by title or description"
           /></label>
           <label
             ><span id="filter-priority-label">Filter by priority</span
@@ -45,6 +45,14 @@
               <option>Open</option>
               <option>InProgress</option>
               <option>Resolved</option>
+            </select></label
+          >
+          <label
+            ><span id="sort-label">Sort tickets</span
+            ><select id="sort" aria-labelledby="sort-label">
+              <option value="">Title</option>
+              <option value="priority">Priority</option>
+              <option value="status">Status</option>
             </select></label
           >
           <button type="submit">Apply filters</button>

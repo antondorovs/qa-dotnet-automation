@@ -37,6 +37,7 @@ async function loadTickets() {
     search: byId("search").value,
     priority: byId("filter-priority").value,
     status: byId("filter-status").value,
+    sort: byId("sort").value,
   });
   const tickets = await request(`/api/tickets?${query}`);
   const rows = byId("ticket-rows");

@@ -124,7 +124,7 @@ button:disabled {
 }
 .filters {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr auto;
+  grid-template-columns: 2fr repeat(3, 1fr) auto;
   gap: 16px;
   align-items: end;
 }

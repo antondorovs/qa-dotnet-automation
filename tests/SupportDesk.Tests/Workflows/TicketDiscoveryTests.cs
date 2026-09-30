@@ -84,4 +84,38 @@ public class TicketDiscoveryTests : UiTest
 
         await Expect(Tickets.TicketLinks).ToHaveTextAsync(new[] { expected.Title });
     }
+
+    [Test]
+    public async Task StatusSortDisplaysTicketsInWorkflowOrder()
+    {
+        var prefix = $"Workflow order {Guid.NewGuid():N}";
+
+        var resolvedRequest = TicketData.NewTicket();
+        resolvedRequest.Title = $"{prefix} A resolved";
+        var resolved = await Data.CreateAsync(resolvedRequest);
+        using var resolvedStarted = await Api.ChangeStatusAsync(resolved.Id, "InProgress");
+        Assert.That(resolvedStarted.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        using var resolvedCompleted = await Api.ChangeStatusAsync(resolved.Id, "Resolved");
+        Assert.That(resolvedCompleted.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+
+        var activeRequest = TicketData.NewTicket();
+        activeRequest.Title = $"{prefix} B active";
+        var active = await Data.CreateAsync(activeRequest);
+        using var activeStarted = await Api.ChangeStatusAsync(active.Id, "InProgress");
+        Assert.That(activeStarted.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+
+        var openRequest = TicketData.NewTicket();
+        openRequest.Title = $"{prefix} C open";
+        var open = await Data.CreateAsync(openRequest);
+
+        await Tickets.OpenAsync();
+        await Tickets.FilterAsync(prefix, sort: "status");
+
+        await Expect(Tickets.TicketLinks).ToHaveTextAsync(new[]
+        {
+            open.Title,
+            active.Title,
+            resolved.Title
+        });
+    }
 }
