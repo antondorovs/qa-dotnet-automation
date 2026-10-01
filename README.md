@@ -1,8 +1,8 @@
 # QA .NET Workflows
 
 C# automation for Support Desk: prepare tickets through API, act in the browser,
-verify saved state through API and PostgreSQL. The suite has 20 scenarios:
-8 API, 3 UI and 9 mixed workflows. Chromium is the default browser; tests run sequentially without retries.
+verify saved state through API and PostgreSQL. The suite has 21 scenarios:
+9 API, 3 UI and 9 mixed workflows. Chromium is the default browser; tests run sequentially without retries.
 
 ## Stack and structure
 
@@ -24,7 +24,8 @@ Invalid input returns `400` with field errors and must not insert a row.
 Ticket search checks titles and descriptions. Search, priority and status filters are
 case-insensitive and ignore surrounding spaces. The API can order matching tickets by
 priority, placing urgent work first, or by their natural workflow stage. The browser
-interface exposes the same title, priority and status ordering options.
+interface exposes the same title, priority and status ordering options. Unsupported sort
+values return `400` with a field error.
 Tests own their data and remove it in teardown, including after failures.
 
 ## Run in Docker

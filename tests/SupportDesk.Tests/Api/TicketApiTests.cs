@@ -171,4 +171,15 @@ public class TicketApiTests : ApiTest
         Assert.That(matches.Select(match => match.Status),
             Is.EqualTo(new[] { "Open", "InProgress", "Resolved" }));
     }
+
+    [Test]
+    public async Task UnsupportedSortIsRejected()
+    {
+        using var response = await Api.ListAsync("", "", "", "newest");
+
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.That(body.RootElement.GetProperty("errors").GetProperty("sort")[0].GetString(),
+            Is.EqualTo("Sort must be priority or status."));
+    }
 }

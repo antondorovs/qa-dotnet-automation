@@ -30,11 +30,22 @@ app.MapPost("/api/tickets", async (CreateTicketRequest request) =>
 });
 
 app.MapGet("/api/tickets", async (string? search, string? priority, string? status, string? sort) =>
-    Results.Ok(await tickets.ListAsync(
+{
+    var normalizedSort = sort?.Trim().ToLowerInvariant() ?? "";
+    if (normalizedSort is not ("" or "priority" or "status"))
+    {
+        return Results.ValidationProblem(new Dictionary<string, string[]>
+        {
+            ["sort"] = new[] { "Sort must be priority or status." }
+        });
+    }
+
+    return Results.Ok(await tickets.ListAsync(
         search?.Trim() ?? "",
         priority?.Trim() ?? "",
         status?.Trim() ?? "",
-        sort?.Trim().ToLowerInvariant() ?? "")));
+        normalizedSort));
+});
 
 app.MapGet("/api/tickets/{id:guid}", async (Guid id) =>
 {
