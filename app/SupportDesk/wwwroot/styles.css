@@ -131,6 +131,10 @@ button:disabled {
 .filters label {
   margin-bottom: 0;
 }
+.filter-actions {
+  display: flex;
+  gap: 8px;
+}
 table {
   width: 100%;
   border-collapse: collapse;
@@ -199,6 +203,9 @@ dialog::backdrop {
 @media (max-width: 760px) {
   .filters {
     grid-template-columns: 1fr;
+  }
+  .filter-actions {
+    flex-wrap: wrap;
   }
   header span {
     display: none;

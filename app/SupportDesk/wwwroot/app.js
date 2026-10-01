@@ -130,6 +130,15 @@ byId("filters").addEventListener("submit", async (event) => {
   }
 });
 
+byId("clear-filters").addEventListener("click", async () => {
+  byId("filters").reset();
+  try {
+    await loadTickets();
+  } catch (error) {
+    showError(error);
+  }
+});
+
 byId("ticket-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   const title = byId("ticket-title").value.trim();

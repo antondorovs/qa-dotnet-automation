@@ -55,7 +55,12 @@
               <option value="status">Status</option>
             </select></label
           >
-          <button type="submit">Apply filters</button>
+          <div class="filter-actions">
+            <button type="submit">Apply filters</button>
+            <button type="button" id="clear-filters" class="secondary">
+              Clear filters
+            </button>
+          </div>
         </form>
         <p id="result-count" role="status"></p>
         <table aria-label="Tickets">

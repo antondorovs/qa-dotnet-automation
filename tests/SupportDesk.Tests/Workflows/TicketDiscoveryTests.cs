@@ -118,4 +118,20 @@ public class TicketDiscoveryTests : UiTest
             resolved.Title
         });
     }
+
+    [Test]
+    public async Task ClearingFiltersRestoresHiddenTickets()
+    {
+        var visible = await Data.CreateAsync(TicketData.NewTicket("High"));
+        var hidden = await Data.CreateAsync(TicketData.NewTicket("Low"));
+
+        await Tickets.OpenAsync();
+        await Tickets.FilterAsync(visible.Title, "High", "Open", "priority");
+        await Expect(Tickets.TicketLinks).ToHaveTextAsync(new[] { visible.Title });
+
+        await Tickets.ClearFiltersAsync();
+
+        await Expect(Tickets.TicketLink(visible.Title)).ToBeVisibleAsync();
+        await Expect(Tickets.TicketLink(hidden.Title)).ToBeVisibleAsync();
+    }
 }
