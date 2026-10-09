@@ -182,4 +182,20 @@ public class TicketApiTests : ApiTest
         Assert.That(body.RootElement.GetProperty("errors").GetProperty("sort")[0].GetString(),
             Is.EqualTo("Sort must be priority or status."));
     }
+
+    [TestCase("urgent", "", "priority", "Priority must be Low, Normal or High.")]
+    [TestCase("", "waiting", "status", "Status must be Open, InProgress or Resolved.")]
+    public async Task UnsupportedFilterIsRejected(
+        string priority,
+        string status,
+        string field,
+        string message)
+    {
+        using var response = await Api.ListAsync("", priority, status);
+
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.That(body.RootElement.GetProperty("errors").GetProperty(field)[0].GetString(),
+            Is.EqualTo(message));
+    }
 }
