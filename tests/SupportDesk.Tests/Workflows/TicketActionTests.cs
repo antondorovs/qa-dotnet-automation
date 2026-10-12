@@ -102,6 +102,18 @@ public class TicketActionTests : UiTest
     }
 
     [Test]
+    public async Task CommentHeadingUpdatesAfterAddingComment()
+    {
+        var ticket = await Data.CreateAsync(TicketData.NewTicket());
+        await Details.OpenAsync(ticket.Id);
+        await Expect(Details.CommentsHeading).ToHaveTextAsync("Comments (0)");
+
+        await Details.AddCommentAsync("Waiting for the customer's reply.");
+
+        await Expect(Details.CommentsHeading).ToHaveTextAsync("Comments (1)");
+    }
+
+    [Test]
     public async Task DeletedTicketDisappearsFromUiAndApi()
     {
         var ticket = await Data.CreateAsync(TicketData.NewTicket());

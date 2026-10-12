@@ -15,6 +15,7 @@ public class TicketDetailsPage
     public ILocator Description => page.GetByTestId("ticket-description");
     public ILocator Priority => page.GetByTestId("ticket-priority");
     public ILocator Status => page.GetByTestId("ticket-status");
+    public ILocator CommentsHeading => page.Locator("#comments-heading");
     public Task OpenAsync(Guid id) => page.GotoAsync($"/#tickets/{id}");
     public Task EditAsync() => page.GetByRole(AriaRole.Button, new() { Name = "Edit ticket" }).ClickAsync();
     public Task StartWorkAsync() => page.GetByRole(AriaRole.Button, new() { Name = "Start work" }).ClickAsync();

@@ -86,6 +86,7 @@ async function loadDetail(id) {
 
 async function loadComments() {
   const comments = await request(`/api/tickets/${currentTicket.id}/comments`);
+  byId("comments-heading").textContent = `Comments (${comments.length})`;
   byId("comments").replaceChildren();
   for (const comment of comments) {
     const item = document.createElement("li");
