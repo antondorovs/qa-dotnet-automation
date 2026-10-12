@@ -198,4 +198,21 @@ public class TicketApiTests : ApiTest
         Assert.That(body.RootElement.GetProperty("errors").GetProperty(field)[0].GetString(),
             Is.EqualTo(message));
     }
+
+    [Test]
+    public async Task TicketReportsItsCommentCount()
+    {
+        var ticket = await Data.CreateAsync(TicketData.NewTicket());
+        using var first = await Api.AddCommentAsync(ticket.Id, "Customer confirmed the issue.");
+        using var second = await Api.AddCommentAsync(ticket.Id, "Investigation has started.");
+        Assert.That(first.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+        Assert.That(second.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+
+        using var response = await Api.GetAsync(ticket.Id);
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        var saved = await response.Content.ReadFromJsonAsync<TicketResponse>()
+            ?? throw new AssertionException("Get response was empty.");
+
+        Assert.That(saved.CommentCount, Is.EqualTo(2));
+    }
 }

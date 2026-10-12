@@ -37,7 +37,10 @@ public class TicketStore
     public async Task<Ticket?> GetAsync(Guid id)
     {
         await using var command = dataSource.CreateCommand("""
-            SELECT id, title, description, priority, status FROM tickets WHERE id = $1
+            SELECT t.id, t.title, t.description, t.priority, t.status,
+              (SELECT count(*)::int FROM comments c WHERE c.ticket_id = t.id)
+            FROM tickets t
+            WHERE t.id = $1
             """);
         command.Parameters.AddWithValue(id);
         await using var reader = await command.ExecuteReaderAsync();
@@ -52,7 +55,8 @@ public class TicketStore
             Title = reader.GetString(1),
             Description = reader.GetString(2),
             Priority = reader.GetString(3),
-            Status = reader.GetString(4)
+            Status = reader.GetString(4),
+            CommentCount = reader.GetInt32(5)
         };
     }
 
@@ -70,7 +74,9 @@ public class TicketStore
     public async Task<List<Ticket>> ListAsync(string search, string priority, string status, string sort)
     {
         await using var command = dataSource.CreateCommand("""
-            SELECT id, title, description, priority, status FROM tickets
+            SELECT t.id, t.title, t.description, t.priority, t.status,
+              (SELECT count(*)::int FROM comments c WHERE c.ticket_id = t.id)
+            FROM tickets t
             WHERE ($1 = '' OR strpos(lower(title), lower($1)) > 0
                 OR strpos(lower(description), lower($1)) > 0)
               AND ($2 = '' OR lower(priority) = lower($2))
@@ -99,7 +105,8 @@ public class TicketStore
                 Title = reader.GetString(1),
                 Description = reader.GetString(2),
                 Priority = reader.GetString(3),
-                Status = reader.GetString(4)
+                Status = reader.GetString(4),
+                CommentCount = reader.GetInt32(5)
             });
         }
         return result;

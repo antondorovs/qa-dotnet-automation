@@ -7,4 +7,5 @@ public class Ticket
     public string Description { get; set; } = "";
     public string Priority { get; set; } = "Normal";
     public string Status { get; set; } = "Open";
+    public int CommentCount { get; set; }
 }
