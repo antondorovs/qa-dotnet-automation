@@ -15,6 +15,7 @@ public class TicketListPage
     public Task NewTicketAsync() => page.GetByRole(AriaRole.Link, new() { Name = "New ticket", Exact = true }).ClickAsync();
     public ILocator TicketLink(string title) => page.GetByRole(AriaRole.Link, new() { Name = title, Exact = true });
     public ILocator TicketLinks => page.GetByRole(AriaRole.Table, new() { Name = "Tickets", Exact = true }).GetByRole(AriaRole.Link);
+    public ILocator CommentCount(string title) => TicketLink(title).Locator("xpath=ancestor::tr").GetByRole(AriaRole.Cell).Nth(3);
     public Task ClearFiltersAsync() => page.GetByRole(AriaRole.Button, new() { Name = "Clear filters" }).ClickAsync();
 
     public async Task FilterAsync(string search = "", string priority = "", string status = "", string sort = "")

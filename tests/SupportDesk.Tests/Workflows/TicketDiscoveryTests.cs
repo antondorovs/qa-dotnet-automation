@@ -134,4 +134,18 @@ public class TicketDiscoveryTests : UiTest
         await Expect(Tickets.TicketLink(visible.Title)).ToBeVisibleAsync();
         await Expect(Tickets.TicketLink(hidden.Title)).ToBeVisibleAsync();
     }
+
+    [Test]
+    public async Task TicketListShowsTheCommentCount()
+    {
+        var ticket = await Data.CreateAsync(TicketData.NewTicket());
+        using var first = await Api.AddCommentAsync(ticket.Id, "Customer supplied the logs.");
+        using var second = await Api.AddCommentAsync(ticket.Id, "Logs were attached to the case.");
+        Assert.That(first.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+        Assert.That(second.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+
+        await Tickets.OpenAsync();
+
+        await Expect(Tickets.CommentCount(ticket.Title)).ToHaveTextAsync("2");
+    }
 }

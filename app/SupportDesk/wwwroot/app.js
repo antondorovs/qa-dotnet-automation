@@ -50,7 +50,7 @@ async function loadTickets() {
     link.textContent = ticket.title;
     title.append(link);
     row.append(title);
-    for (const value of [ticket.priority, ticket.status]) {
+    for (const value of [ticket.priority, ticket.status, ticket.commentCount]) {
       const cell = document.createElement("td");
       cell.textContent = value;
       row.append(cell);
