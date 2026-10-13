@@ -43,9 +43,9 @@ app.MapGet("/api/tickets", async (string? search, string? priority, string? stat
     {
         errors["status"] = new[] { "Status must be Open, InProgress or Resolved." };
     }
-    if (normalizedSort is not ("" or "priority" or "status"))
+    if (normalizedSort is not ("" or "priority" or "status" or "comments"))
     {
-        errors["sort"] = new[] { "Sort must be priority or status." };
+        errors["sort"] = new[] { "Sort must be priority, status or comments." };
     }
     if (errors.Count > 0)
     {

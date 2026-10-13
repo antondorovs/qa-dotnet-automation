@@ -88,6 +88,9 @@ public class TicketStore
               CASE WHEN $4 = 'status' THEN
                 CASE status WHEN 'Open' THEN 1 WHEN 'InProgress' THEN 2 ELSE 3 END
               END,
+              CASE WHEN $4 = 'comments' THEN
+                (SELECT count(*) FROM comments c_order WHERE c_order.ticket_id = t.id)
+              END DESC,
               title,
               id
             """);

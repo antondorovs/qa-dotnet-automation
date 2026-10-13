@@ -148,4 +148,26 @@ public class TicketDiscoveryTests : UiTest
 
         await Expect(Tickets.CommentCount(ticket.Title)).ToHaveTextAsync("2");
     }
+
+    [Test]
+    public async Task CommentSortPlacesActiveDiscussionsFirst()
+    {
+        var prefix = $"Comment activity {Guid.NewGuid():N}";
+        var quietRequest = TicketData.NewTicket();
+        quietRequest.Title = $"{prefix} A quiet";
+        var quiet = await Data.CreateAsync(quietRequest);
+
+        var activeRequest = TicketData.NewTicket();
+        activeRequest.Title = $"{prefix} Z active";
+        var active = await Data.CreateAsync(activeRequest);
+        using var first = await Api.AddCommentAsync(active.Id, "Customer supplied the logs.");
+        using var second = await Api.AddCommentAsync(active.Id, "Investigation is in progress.");
+        Assert.That(first.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+        Assert.That(second.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+
+        await Tickets.OpenAsync();
+        await Tickets.FilterAsync(prefix, sort: "comments");
+
+        await Expect(Tickets.TicketLinks).ToHaveTextAsync(new[] { active.Title, quiet.Title });
+    }
 }

@@ -180,7 +180,7 @@ public class TicketApiTests : ApiTest
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
         using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         Assert.That(body.RootElement.GetProperty("errors").GetProperty("sort")[0].GetString(),
-            Is.EqualTo("Sort must be priority or status."));
+            Is.EqualTo("Sort must be priority, status or comments."));
     }
 
     [TestCase("urgent", "", "priority", "Priority must be Low, Normal or High.")]
