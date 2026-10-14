@@ -133,24 +133,36 @@ public class TicketStore
         await using var command = dataSource.CreateCommand("""
             INSERT INTO comments (id, ticket_id, body)
             SELECT $1, id, $2 FROM tickets WHERE id = $3
+            RETURNING created_at
             """);
         command.Parameters.AddWithValue(comment.Id);
         command.Parameters.AddWithValue(comment.Body);
         command.Parameters.AddWithValue(ticketId);
-        return await command.ExecuteNonQueryAsync() == 1 ? comment : null;
+        await using var reader = await command.ExecuteReaderAsync();
+        if (!await reader.ReadAsync())
+        {
+            return null;
+        }
+        comment.CreatedAt = new DateTimeOffset(reader.GetDateTime(0));
+        return comment;
     }
 
     public async Task<List<Comment>> GetCommentsAsync(Guid ticketId)
     {
         await using var command = dataSource.CreateCommand("""
-            SELECT id, body FROM comments WHERE ticket_id = $1 ORDER BY created_at, id
+            SELECT id, body, created_at FROM comments WHERE ticket_id = $1 ORDER BY created_at, id
             """);
         command.Parameters.AddWithValue(ticketId);
         await using var reader = await command.ExecuteReaderAsync();
         var comments = new List<Comment>();
         while (await reader.ReadAsync())
         {
-            comments.Add(new Comment { Id = reader.GetGuid(0), Body = reader.GetString(1) });
+            comments.Add(new Comment
+            {
+                Id = reader.GetGuid(0),
+                Body = reader.GetString(1),
+                CreatedAt = new DateTimeOffset(reader.GetDateTime(2))
+            });
         }
         return comments;
     }

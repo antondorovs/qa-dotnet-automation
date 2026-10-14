@@ -215,4 +215,26 @@ public class TicketApiTests : ApiTest
 
         Assert.That(saved.CommentCount, Is.EqualTo(2));
     }
+
+    [Test]
+    public async Task CommentTimestampIsConsistentAcrossResponses()
+    {
+        var ticket = await Data.CreateAsync(TicketData.NewTicket());
+        using var createdResponse = await Api.AddCommentAsync(ticket.Id, "Timestamp contract check.");
+        Assert.That(createdResponse.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+        var created = await createdResponse.Content.ReadFromJsonAsync<CommentResponse>()
+            ?? throw new AssertionException("Create comment response was empty.");
+
+        using var listResponse = await Api.GetCommentsAsync(ticket.Id);
+        Assert.That(listResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        var comments = await listResponse.Content.ReadFromJsonAsync<List<CommentResponse>>()
+            ?? throw new AssertionException("Comments response was empty.");
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(created.CreatedAt, Is.Not.EqualTo(default(DateTimeOffset)));
+            Assert.That(comments, Has.Count.EqualTo(1));
+            Assert.That(comments[0].CreatedAt, Is.EqualTo(created.CreatedAt));
+        }
+    }
 }
