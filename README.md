@@ -1,8 +1,8 @@
 # QA .NET Workflows
 
 C# automation for Support Desk: prepare tickets through API, act in the browser,
-verify saved state through API and PostgreSQL. The suite has 29 scenarios:
-13 API, 3 UI and 13 mixed workflows. Chromium is the default browser; tests run sequentially without retries.
+verify saved state through API and PostgreSQL. The suite has 30 scenarios:
+13 API, 3 UI and 14 mixed workflows. Chromium is the default browser; tests run sequentially without retries.
 
 ## Stack and structure
 
@@ -29,7 +29,7 @@ or filter values return `400` with field errors. Clear filters restores the comp
 ticket list. Ticket responses include the current number of comments.
 Ticket lists and details show comment counts; the detail count updates after every added comment.
 The list can place tickets with the most active discussions first.
-Comment responses include their database creation time.
+Comment responses include their database creation time, which is shown beside each comment.
 Tests own their data and remove it in teardown, including after failures.
 
 ## Run in Docker

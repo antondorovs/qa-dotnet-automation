@@ -20,7 +20,8 @@ public class TicketDetailsPage
     public Task EditAsync() => page.GetByRole(AriaRole.Button, new() { Name = "Edit ticket" }).ClickAsync();
     public Task StartWorkAsync() => page.GetByRole(AriaRole.Button, new() { Name = "Start work" }).ClickAsync();
     public Task ResolveAsync() => page.GetByRole(AriaRole.Button, new() { Name = "Resolve ticket" }).ClickAsync();
-    public ILocator Comments => page.GetByRole(AriaRole.List, new() { Name = "Comments" }).GetByRole(AriaRole.Listitem);
+    public ILocator Comments => page.Locator("#comments .comment-body");
+    public ILocator CommentTimes => page.Locator("#comments time");
 
     public async Task AddCommentAsync(string body)
     {

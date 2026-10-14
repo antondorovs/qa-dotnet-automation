@@ -196,9 +196,17 @@ dialog::backdrop {
   padding-left: 22px;
 }
 #comments li {
+  display: grid;
+  gap: 3px;
   padding: 10px 0;
+}
+.comment-body {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+#comments time {
+  color: #526579;
+  font-size: 13px;
 }
 @media (max-width: 760px) {
   .filters {

@@ -1,4 +1,8 @@
 const byId = (id) => document.getElementById(id);
+const commentTimeFormatter = new Intl.DateTimeFormat(undefined, {
+  dateStyle: "medium",
+  timeStyle: "short",
+});
 let currentTicket = null;
 let editingId = null;
 
@@ -90,7 +94,13 @@ async function loadComments() {
   byId("comments").replaceChildren();
   for (const comment of comments) {
     const item = document.createElement("li");
-    item.textContent = comment.body;
+    const body = document.createElement("span");
+    body.className = "comment-body";
+    body.textContent = comment.body;
+    const time = document.createElement("time");
+    time.dateTime = comment.createdAt;
+    time.textContent = commentTimeFormatter.format(new Date(comment.createdAt));
+    item.append(body, time);
     byId("comments").append(item);
   }
 }
