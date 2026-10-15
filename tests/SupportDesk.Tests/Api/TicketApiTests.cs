@@ -55,6 +55,27 @@ public class TicketApiTests : ApiTest
         }
     }
 
+    [Test]
+    public async Task TicketCreationTimeIsConsistentAcrossResponses()
+    {
+        using var createdResponse = await Api.CreateAsync(TicketData.NewTicket());
+        Assert.That(createdResponse.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+        var created = await createdResponse.Content.ReadFromJsonAsync<TicketResponse>()
+            ?? throw new AssertionException("Create response was empty.");
+        Data.Track(created.Id);
+
+        using var getResponse = await Api.GetAsync(created.Id);
+        Assert.That(getResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        var saved = await getResponse.Content.ReadFromJsonAsync<TicketResponse>()
+            ?? throw new AssertionException("Get response was empty.");
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(created.CreatedAt, Is.Not.EqualTo(default(DateTimeOffset)));
+            Assert.That(saved.CreatedAt, Is.EqualTo(created.CreatedAt));
+        }
+    }
+
     [TestCaseSource(nameof(InvalidTickets))]
     public async Task InvalidTicketIsRejected(InvalidTicketCase testCase)
     {

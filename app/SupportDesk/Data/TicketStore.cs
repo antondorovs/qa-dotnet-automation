@@ -24,13 +24,14 @@ public class TicketStore
         await using var command = dataSource.CreateCommand("""
             INSERT INTO tickets (id, title, description, priority, status)
             VALUES ($1, $2, $3, $4, $5)
+            RETURNING created_at
             """);
         command.Parameters.AddWithValue(ticket.Id);
         command.Parameters.AddWithValue(ticket.Title);
         command.Parameters.AddWithValue(ticket.Description);
         command.Parameters.AddWithValue(ticket.Priority);
         command.Parameters.AddWithValue(ticket.Status);
-        await command.ExecuteNonQueryAsync();
+        ticket.CreatedAt = new DateTimeOffset((DateTime)(await command.ExecuteScalarAsync())!);
         return ticket;
     }
 
@@ -38,7 +39,8 @@ public class TicketStore
     {
         await using var command = dataSource.CreateCommand("""
             SELECT t.id, t.title, t.description, t.priority, t.status,
-              (SELECT count(*)::int FROM comments c WHERE c.ticket_id = t.id)
+              (SELECT count(*)::int FROM comments c WHERE c.ticket_id = t.id),
+              t.created_at
             FROM tickets t
             WHERE t.id = $1
             """);
@@ -56,7 +58,8 @@ public class TicketStore
             Description = reader.GetString(2),
             Priority = reader.GetString(3),
             Status = reader.GetString(4),
-            CommentCount = reader.GetInt32(5)
+            CommentCount = reader.GetInt32(5),
+            CreatedAt = new DateTimeOffset(reader.GetDateTime(6))
         };
     }
 
@@ -75,7 +78,8 @@ public class TicketStore
     {
         await using var command = dataSource.CreateCommand("""
             SELECT t.id, t.title, t.description, t.priority, t.status,
-              (SELECT count(*)::int FROM comments c WHERE c.ticket_id = t.id)
+              (SELECT count(*)::int FROM comments c WHERE c.ticket_id = t.id),
+              t.created_at
             FROM tickets t
             WHERE ($1 = '' OR strpos(lower(title), lower($1)) > 0
                 OR strpos(lower(description), lower($1)) > 0)
@@ -109,7 +113,8 @@ public class TicketStore
                 Description = reader.GetString(2),
                 Priority = reader.GetString(3),
                 Status = reader.GetString(4),
-                CommentCount = reader.GetInt32(5)
+                CommentCount = reader.GetInt32(5),
+                CreatedAt = new DateTimeOffset(reader.GetDateTime(6))
             });
         }
         return result;

@@ -8,4 +8,5 @@ public class Ticket
     public string Priority { get; set; } = "Normal";
     public string Status { get; set; } = "Open";
     public int CommentCount { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
 }
