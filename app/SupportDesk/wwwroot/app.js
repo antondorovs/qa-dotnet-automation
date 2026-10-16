@@ -1,5 +1,5 @@
 const byId = (id) => document.getElementById(id);
-const commentTimeFormatter = new Intl.DateTimeFormat(undefined, {
+const localDateTimeFormatter = new Intl.DateTimeFormat(undefined, {
   dateStyle: "medium",
   timeStyle: "short",
 });
@@ -82,6 +82,11 @@ async function loadDetail(id) {
   byId("detail-description").textContent = currentTicket.description;
   byId("detail-priority").textContent = currentTicket.priority;
   byId("detail-status").textContent = currentTicket.status;
+  const createdTime = byId("detail-created").querySelector("time");
+  createdTime.dateTime = currentTicket.createdAt;
+  createdTime.textContent = localDateTimeFormatter.format(
+    new Date(currentTicket.createdAt),
+  );
   byId("start-work").hidden = currentTicket.status !== "Open";
   byId("resolve").hidden = currentTicket.status !== "InProgress";
   await loadComments();
@@ -99,7 +104,9 @@ async function loadComments() {
     body.textContent = comment.body;
     const time = document.createElement("time");
     time.dateTime = comment.createdAt;
-    time.textContent = commentTimeFormatter.format(new Date(comment.createdAt));
+    time.textContent = localDateTimeFormatter.format(
+      new Date(comment.createdAt),
+    );
     item.append(body, time);
     byId("comments").append(item);
   }

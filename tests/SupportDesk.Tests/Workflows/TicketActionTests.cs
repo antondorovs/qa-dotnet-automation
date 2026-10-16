@@ -129,6 +129,20 @@ public class TicketActionTests : UiTest
     }
 
     [Test]
+    public async Task TicketDetailsShowItsCreationTime()
+    {
+        var ticket = await Data.CreateAsync(TicketData.NewTicket());
+
+        await Details.OpenAsync(ticket.Id);
+
+        await Expect(Details.CreatedTime).ToBeVisibleAsync();
+        var dateTime = await Details.CreatedTime.GetAttributeAsync("datetime");
+        Assert.That(DateTimeOffset.TryParse(dateTime, out var displayed), Is.True,
+            $"Expected a valid DateTimeOffset, but received '{dateTime}'.");
+        Assert.That(displayed, Is.EqualTo(ticket.CreatedAt));
+    }
+
+    [Test]
     public async Task DeletedTicketDisappearsFromUiAndApi()
     {
         var ticket = await Data.CreateAsync(TicketData.NewTicket());

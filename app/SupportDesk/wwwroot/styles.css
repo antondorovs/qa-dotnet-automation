@@ -166,6 +166,11 @@ dd {
   margin: 0;
   font-weight: 600;
 }
+#detail-created time {
+  color: #526579;
+  font-size: 14px;
+  font-weight: 500;
+}
 #detail-description {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
