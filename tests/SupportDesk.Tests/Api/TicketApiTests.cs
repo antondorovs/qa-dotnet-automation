@@ -194,14 +194,35 @@ public class TicketApiTests : ApiTest
     }
 
     [Test]
+    public async Task NewestSortPlacesRecentlyCreatedTicketsFirst()
+    {
+        var marker = $"Creation order {Guid.NewGuid():N}";
+        var olderRequest = TicketData.NewTicket();
+        olderRequest.Title = $"{marker} older";
+        var older = await Data.CreateAsync(olderRequest);
+        await Task.Delay(10);
+        var newerRequest = TicketData.NewTicket();
+        newerRequest.Title = $"{marker} newer";
+        var newer = await Data.CreateAsync(newerRequest);
+
+        using var response = await Api.ListAsync(marker, "", "", "newest");
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        var matches = await response.Content.ReadFromJsonAsync<List<TicketResponse>>()
+            ?? throw new AssertionException("List response was empty.");
+
+        Assert.That(matches.Select(match => match.Id),
+            Is.EqualTo(new[] { newer.Id, older.Id }));
+    }
+
+    [Test]
     public async Task UnsupportedSortIsRejected()
     {
-        using var response = await Api.ListAsync("", "", "", "newest");
+        using var response = await Api.ListAsync("", "", "", "oldest");
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
         using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         Assert.That(body.RootElement.GetProperty("errors").GetProperty("sort")[0].GetString(),
-            Is.EqualTo("Sort must be priority, status or comments."));
+            Is.EqualTo("Sort must be priority, status, comments or newest."));
     }
 
     [TestCase("urgent", "", "priority", "Priority must be Low, Normal or High.")]
