@@ -188,4 +188,22 @@ public class TicketDiscoveryTests : UiTest
 
         await Expect(Tickets.TicketLinks).ToHaveTextAsync(new[] { newer.Title, older.Title });
     }
+
+    [Test]
+    public async Task OldestSortDisplaysEarlierTicketsFirst()
+    {
+        var prefix = $"Earlier tickets {Guid.NewGuid():N}";
+        var olderRequest = TicketData.NewTicket();
+        olderRequest.Title = $"{prefix} Z older";
+        var older = await Data.CreateAsync(olderRequest);
+        await Task.Delay(10);
+        var newerRequest = TicketData.NewTicket();
+        newerRequest.Title = $"{prefix} A newer";
+        var newer = await Data.CreateAsync(newerRequest);
+
+        await Tickets.OpenAsync();
+        await Tickets.FilterAsync(prefix, sort: "oldest");
+
+        await Expect(Tickets.TicketLinks).ToHaveTextAsync(new[] { older.Title, newer.Title });
+    }
 }

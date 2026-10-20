@@ -96,6 +96,7 @@ public class TicketStore
                 (SELECT count(*) FROM comments c_order WHERE c_order.ticket_id = t.id)
               END DESC,
               CASE WHEN $4 = 'newest' THEN t.created_at END DESC,
+              CASE WHEN $4 = 'oldest' THEN t.created_at END,
               title,
               id
             """);
