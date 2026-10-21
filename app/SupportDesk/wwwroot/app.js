@@ -77,7 +77,9 @@ function openForm(ticket = null) {
 }
 
 async function loadDetail(id) {
-  currentTicket = await request(`/api/tickets/${id}`);
+  const ticket = await request(`/api/tickets/${id}`);
+  if (currentTicket?.id !== ticket.id) byId("comment-body").value = "";
+  currentTicket = ticket;
   byId("detail-title").textContent = currentTicket.title;
   byId("detail-description").textContent = currentTicket.description;
   byId("detail-priority").textContent = currentTicket.priority;

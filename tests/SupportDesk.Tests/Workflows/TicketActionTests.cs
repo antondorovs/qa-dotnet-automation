@@ -114,6 +114,39 @@ public class TicketActionTests : UiTest
     }
 
     [Test]
+    public async Task SwitchingTicketsClearsThePreviousCommentDraft()
+    {
+        var first = await Data.CreateAsync(TicketData.NewTicket());
+        var second = await Data.CreateAsync(TicketData.NewTicket());
+        await Details.OpenAsync(first.Id);
+        await Expect(Details.Heading).ToHaveTextAsync(first.Title);
+        await Details.CommentInput.FillAsync("Draft intended only for the first ticket.");
+
+        await Details.BackToTicketsAsync();
+        await Tickets.TicketLink(second.Title).ClickAsync();
+
+        await Expect(Details.Heading).ToHaveTextAsync(second.Title);
+        await Expect(Details.CommentInput).ToHaveValueAsync("");
+        await Expect(Details.CommentsHeading).ToHaveTextAsync("Comments (0)");
+    }
+
+    [Test]
+    public async Task StartingWorkPreservesTheCurrentCommentDraft()
+    {
+        var ticket = await Data.CreateAsync(TicketData.NewTicket());
+        await Details.OpenAsync(ticket.Id);
+        await Expect(Details.Heading).ToHaveTextAsync(ticket.Title);
+        const string draft = "Investigation notes still being written.";
+        await Details.CommentInput.FillAsync(draft);
+
+        await Details.StartWorkAsync();
+
+        await Expect(Details.Status).ToHaveTextAsync("InProgress");
+        await Expect(Details.CommentInput).ToHaveValueAsync(draft);
+        await Expect(Details.CommentsHeading).ToHaveTextAsync("Comments (0)");
+    }
+
+    [Test]
     public async Task AddedCommentShowsItsCreationTime()
     {
         var ticket = await Data.CreateAsync(TicketData.NewTicket());

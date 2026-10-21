@@ -23,10 +23,12 @@ public class TicketDetailsPage
     public Task ResolveAsync() => page.GetByRole(AriaRole.Button, new() { Name = "Resolve ticket" }).ClickAsync();
     public ILocator Comments => page.Locator("#comments .comment-body");
     public ILocator CommentTimes => page.Locator("#comments time");
+    public ILocator CommentInput => page.GetByLabel("Comment", new() { Exact = true });
+    public Task BackToTicketsAsync() => page.GetByRole(AriaRole.Link, new() { Name = "Back to tickets", Exact = true }).ClickAsync();
 
     public async Task AddCommentAsync(string body)
     {
-        await page.GetByLabel("Comment", new() { Exact = true }).FillAsync(body);
+        await CommentInput.FillAsync(body);
         await page.GetByRole(AriaRole.Button, new() { Name = "Add comment" }).ClickAsync();
     }
 
