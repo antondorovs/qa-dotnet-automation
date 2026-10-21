@@ -279,6 +279,71 @@ public class TicketApiTests : ApiTest
         Assert.That(saved.CommentCount, Is.EqualTo(2));
     }
 
+    public static IEnumerable<TestCaseData> InvalidComments()
+    {
+        yield return new TestCaseData((string?)null).SetName("NullCommentIsRejected");
+        yield return new TestCaseData("").SetName("EmptyCommentIsRejected");
+        yield return new TestCaseData(" \t\r\n ").SetName("WhitespaceCommentIsRejected");
+        yield return new TestCaseData(new string('x', 2001)).SetName("OversizedCommentIsRejected");
+    }
+
+    [TestCaseSource(nameof(InvalidComments))]
+    public async Task InvalidCommentDoesNotChangeSavedComments(string? comment)
+    {
+        var ticket = await Data.CreateAsync(TicketData.NewTicket());
+        using var existingResponse = await Api.AddCommentAsync(ticket.Id, "Existing discussion.");
+        Assert.That(existingResponse.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+        var existing = await existingResponse.Content.ReadFromJsonAsync<CommentResponse>()
+            ?? throw new AssertionException("Create comment response was empty.");
+
+        using var response = await Api.AddCommentAsync(ticket.Id, comment);
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+        using var error = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.That(error.RootElement.GetProperty("errors").GetProperty("body")[0].GetString(),
+            Is.EqualTo("Comment must contain 1 to 2000 characters."));
+
+        using var listResponse = await Api.GetCommentsAsync(ticket.Id);
+        Assert.That(listResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        var comments = await listResponse.Content.ReadFromJsonAsync<List<CommentResponse>>()
+            ?? throw new AssertionException("Comments response was empty.");
+        using var ticketResponse = await Api.GetAsync(ticket.Id);
+        Assert.That(ticketResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        var saved = await ticketResponse.Content.ReadFromJsonAsync<TicketResponse>()
+            ?? throw new AssertionException("Get response was empty.");
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(comments.Select(item => item.Id), Is.EqualTo(new[] { existing.Id }));
+            Assert.That(comments[0].Body, Is.EqualTo("Existing discussion."));
+            Assert.That(saved.CommentCount, Is.EqualTo(1));
+        }
+    }
+
+    [TestCase(1)]
+    [TestCase(2000)]
+    public async Task CommentLengthBoundariesAreAcceptedAfterTrimming(int length)
+    {
+        var ticket = await Data.CreateAsync(TicketData.NewTicket());
+        var body = new string('x', length);
+        using var response = await Api.AddCommentAsync(ticket.Id, $" \t{body}\r\n ");
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+        var created = await response.Content.ReadFromJsonAsync<CommentResponse>()
+            ?? throw new AssertionException("Create comment response was empty.");
+
+        using var listResponse = await Api.GetCommentsAsync(ticket.Id);
+        Assert.That(listResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        var comments = await listResponse.Content.ReadFromJsonAsync<List<CommentResponse>>()
+            ?? throw new AssertionException("Comments response was empty.");
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(created.Id, Is.Not.EqualTo(Guid.Empty));
+            Assert.That(created.Body, Is.EqualTo(body));
+            Assert.That(comments.Select(item => item.Id), Is.EqualTo(new[] { created.Id }));
+            Assert.That(comments[0].Body, Is.EqualTo(body));
+        }
+    }
+
     [Test]
     public async Task CommentTimestampIsConsistentAcrossResponses()
     {

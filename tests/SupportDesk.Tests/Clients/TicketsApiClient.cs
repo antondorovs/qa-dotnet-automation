@@ -47,7 +47,7 @@ public class TicketsApiClient
         return ApiDiagnostics.AttachAsync(httpClient.GetAsync($"/api/tickets/{id}/comments"));
     }
 
-    public Task<HttpResponseMessage> AddCommentAsync(Guid id, string body)
+    public Task<HttpResponseMessage> AddCommentAsync(Guid id, string? body)
     {
         return ApiDiagnostics.AttachAsync(
             httpClient.PostAsJsonAsync($"/api/tickets/{id}/comments", new { body }));
