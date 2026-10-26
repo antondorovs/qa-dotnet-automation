@@ -225,6 +225,7 @@ byId("comment-form").addEventListener("submit", async (event) => {
     });
     byId("comment-body").value = "";
     await loadComments();
+    byId("error").hidden = true;
   } catch (error) {
     showError(error);
   } finally {

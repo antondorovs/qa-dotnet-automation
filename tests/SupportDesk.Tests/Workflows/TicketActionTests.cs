@@ -114,6 +114,35 @@ public class TicketActionTests : UiTest
     }
 
     [Test]
+    public async Task CorrectedCommentClearsThePreviousValidationError()
+    {
+        var ticket = await Data.CreateAsync(TicketData.NewTicket());
+        await Details.OpenAsync(ticket.Id);
+        await Expect(Details.Heading).ToHaveTextAsync(ticket.Title);
+
+        await Details.AddCommentAsync("   ");
+        var error = Page.GetByRole(AriaRole.Alert);
+        await Expect(error).ToHaveTextAsync("Comment must contain 1 to 2000 characters.");
+        await Expect(error).ToBeVisibleAsync();
+        await Expect(Details.CommentInput).ToHaveValueAsync("   ");
+        await Expect(Details.CommentsHeading).ToHaveTextAsync("Comments (0)");
+
+        const string comment = "Corrected investigation notes.";
+        await Details.AddCommentAsync(comment);
+
+        await Expect(Details.Comments).ToHaveTextAsync(new[] { comment });
+        await Expect(Details.CommentsHeading).ToHaveTextAsync("Comments (1)");
+        await Expect(Details.CommentInput).ToHaveValueAsync("");
+        await Expect(error).ToBeHiddenAsync();
+
+        using var response = await Api.GetCommentsAsync(ticket.Id);
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        var saved = await response.Content.ReadFromJsonAsync<List<CommentResponse>>()
+            ?? throw new AssertionException("Comments response was empty.");
+        Assert.That(saved.Select(item => item.Body), Is.EqualTo(new[] { comment }));
+    }
+
+    [Test]
     public async Task SwitchingTicketsClearsThePreviousCommentDraft()
     {
         var first = await Data.CreateAsync(TicketData.NewTicket());
