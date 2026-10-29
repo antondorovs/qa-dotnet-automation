@@ -355,6 +355,38 @@ public class TicketApiTests : ApiTest
     }
 
     [Test]
+    public async Task DeletingTicketRemovesOnlyItsOwnCommentsFromDatabase()
+    {
+        var ticket = await Data.CreateAsync(TicketData.NewTicket());
+        var other = await Data.CreateAsync(TicketData.NewTicket());
+        using var first = await Api.AddCommentAsync(ticket.Id, "First note to remove.");
+        using var second = await Api.AddCommentAsync(ticket.Id, "Second note to remove.");
+        using var retained = await Api.AddCommentAsync(other.Id, "This discussion must remain.");
+        Assert.That(first.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+        Assert.That(second.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+        Assert.That(retained.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+        var database = new TicketDatabase(Settings.DatabaseConnection);
+        Assert.That(await database.CountCommentsAsync(ticket.Id), Is.EqualTo(2));
+        Assert.That(await database.CountCommentsAsync(other.Id), Is.EqualTo(1));
+
+        using var deleted = await Api.DeleteAsync(ticket.Id);
+        Assert.That(deleted.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
+        using var missingTicket = await Api.GetAsync(ticket.Id);
+        using var missingComments = await Api.GetCommentsAsync(ticket.Id);
+        Assert.That(missingTicket.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
+        Assert.That(missingComments.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
+        Assert.That(await database.CountCommentsAsync(ticket.Id), Is.Zero);
+        Assert.That(await database.CountCommentsAsync(other.Id), Is.EqualTo(1));
+
+        using var otherComments = await Api.GetCommentsAsync(other.Id);
+        Assert.That(otherComments.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        var comments = await otherComments.Content.ReadFromJsonAsync<List<CommentResponse>>()
+            ?? throw new AssertionException("Comments response was empty.");
+        Assert.That(comments.Select(comment => comment.Body),
+            Is.EqualTo(new[] { "This discussion must remain." }));
+    }
+
+    [Test]
     public async Task TicketReportsItsCommentCount()
     {
         var ticket = await Data.CreateAsync(TicketData.NewTicket());

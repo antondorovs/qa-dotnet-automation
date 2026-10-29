@@ -32,4 +32,13 @@ public class TicketDatabase
         command.Parameters.AddWithValue(id);
         return await command.ExecuteScalarAsync() as string;
     }
+
+    public async Task<long> CountCommentsAsync(Guid ticketId)
+    {
+        await using var connection = new NpgsqlConnection(connectionString);
+        await connection.OpenAsync();
+        await using var command = new NpgsqlCommand("SELECT count(*) FROM comments WHERE ticket_id = $1", connection);
+        command.Parameters.AddWithValue(ticketId);
+        return (long)(await command.ExecuteScalarAsync() ?? throw new InvalidOperationException("Count returned no value."));
+    }
 }
