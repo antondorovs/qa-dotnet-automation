@@ -102,6 +102,56 @@ public class TicketApiTests : ApiTest
         Assert.That(await database.CountByDescriptionAsync(request.Description), Is.Zero);
     }
 
+    [Test]
+    public async Task UpdatingTicketPreservesItsWorkflowAndDiscussion()
+    {
+        var original = await Data.CreateAsync(TicketData.NewTicket("Low"));
+        using var started = await Api.ChangeStatusAsync(original.Id, "InProgress");
+        Assert.That(started.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        using var commentResponse = await Api.AddCommentAsync(original.Id, "Existing investigation notes.");
+        Assert.That(commentResponse.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+        var comment = await commentResponse.Content.ReadFromJsonAsync<CommentResponse>()
+            ?? throw new AssertionException("Create comment response was empty.");
+
+        var update = TicketData.NewTicket("High");
+        update.Title = $"  {update.Title}  ";
+        update.Description = $"  {update.Description}  ";
+        using var response = await Api.UpdateAsync(original.Id, update);
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        var updated = await response.Content.ReadFromJsonAsync<TicketResponse>()
+            ?? throw new AssertionException("Update response was empty.");
+
+        using var savedResponse = await Api.GetAsync(original.Id);
+        Assert.That(savedResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        var saved = await savedResponse.Content.ReadFromJsonAsync<TicketResponse>()
+            ?? throw new AssertionException("Get response was empty.");
+        using (Assert.EnterMultipleScope())
+        {
+            foreach (var ticket in new[] { updated, saved })
+            {
+                Assert.That(ticket.Id, Is.EqualTo(original.Id));
+                Assert.That(ticket.Title, Is.EqualTo(update.Title.Trim()));
+                Assert.That(ticket.Description, Is.EqualTo(update.Description.Trim()));
+                Assert.That(ticket.Priority, Is.EqualTo("High"));
+                Assert.That(ticket.Status, Is.EqualTo("InProgress"));
+                Assert.That(ticket.CreatedAt, Is.EqualTo(original.CreatedAt));
+                Assert.That(ticket.CommentCount, Is.EqualTo(1));
+            }
+        }
+
+        using var commentsResponse = await Api.GetCommentsAsync(original.Id);
+        Assert.That(commentsResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        var comments = await commentsResponse.Content.ReadFromJsonAsync<List<CommentResponse>>()
+            ?? throw new AssertionException("Comments response was empty.");
+        Assert.That(comments, Has.Count.EqualTo(1));
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(comments[0].Id, Is.EqualTo(comment.Id));
+            Assert.That(comments[0].Body, Is.EqualTo(comment.Body));
+            Assert.That(comments[0].CreatedAt, Is.EqualTo(comment.CreatedAt));
+        }
+    }
+
     [TestCase("title", "Title must contain 1 to 120 characters.")]
     [TestCase("description", "Description must contain at most 2000 characters.")]
     [TestCase("priority", "Priority must be Low, Normal or High.")]
