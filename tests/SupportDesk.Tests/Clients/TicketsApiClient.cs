@@ -23,6 +23,11 @@ public class TicketsApiClient
         return ApiDiagnostics.AttachAsync(httpClient.GetAsync($"/api/tickets/{id}"));
     }
 
+    public Task<HttpResponseMessage> UpdateAsync(Guid id, CreateTicketRequest request)
+    {
+        return ApiDiagnostics.AttachAsync(httpClient.PutAsJsonAsync($"/api/tickets/{id}", request));
+    }
+
     public Task<HttpResponseMessage> ListAsync(string search, string priority, string status, string sort = "")
     {
         var query = $"search={Uri.EscapeDataString(search)}" +

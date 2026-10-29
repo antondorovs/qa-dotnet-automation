@@ -102,6 +102,48 @@ public class TicketApiTests : ApiTest
         Assert.That(await database.CountByDescriptionAsync(request.Description), Is.Zero);
     }
 
+    [TestCase("title", "Title must contain 1 to 120 characters.")]
+    [TestCase("description", "Description must contain at most 2000 characters.")]
+    [TestCase("priority", "Priority must be Low, Normal or High.")]
+    public async Task InvalidUpdatePreservesTheSavedTicket(string field, string message)
+    {
+        var original = await Data.CreateAsync(TicketData.NewTicket("Low"));
+        var update = TicketData.NewTicket("High");
+        switch (field)
+        {
+            case "title":
+                update.Title = new string('x', 121);
+                break;
+            case "description":
+                update.Description = new string('x', 2001);
+                break;
+            case "priority":
+                update.Priority = "Urgent";
+                break;
+        }
+
+        using var response = await Api.UpdateAsync(original.Id, update);
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+        using var error = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.That(error.RootElement.GetProperty("errors").GetProperty(field)[0].GetString(),
+            Is.EqualTo(message));
+
+        using var savedResponse = await Api.GetAsync(original.Id);
+        Assert.That(savedResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        var saved = await savedResponse.Content.ReadFromJsonAsync<TicketResponse>()
+            ?? throw new AssertionException("Get response was empty.");
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(saved.Id, Is.EqualTo(original.Id));
+            Assert.That(saved.Title, Is.EqualTo(original.Title));
+            Assert.That(saved.Description, Is.EqualTo(original.Description));
+            Assert.That(saved.Priority, Is.EqualTo(original.Priority));
+            Assert.That(saved.Status, Is.EqualTo(original.Status));
+            Assert.That(saved.CreatedAt, Is.EqualTo(original.CreatedAt));
+            Assert.That(saved.CommentCount, Is.EqualTo(original.CommentCount));
+        }
+    }
+
     [Test]
     public async Task UnknownTicketReturnsNotFound()
     {
