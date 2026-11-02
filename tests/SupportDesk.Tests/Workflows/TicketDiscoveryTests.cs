@@ -1,5 +1,6 @@
 using System.Net;
 using Allure.NUnit;
+using Microsoft.Playwright;
 using NUnit.Framework;
 using QaDotnetWorkflows.Tests.Fixtures;
 using QaDotnetWorkflows.Tests.TestData;
@@ -43,6 +44,56 @@ public class TicketDiscoveryTests : UiTest
 
         await Expect(Tickets.TicketLinks).ToHaveTextAsync(new[] { request.Title });
         await Expect(Tickets.TicketLink(unrelated.Title)).ToHaveCountAsync(0);
+    }
+
+    [Test]
+    public async Task SlowPreviousSearchCannotReplaceTheLatestResults()
+    {
+        var olderRequest = TicketData.NewTicket();
+        olderRequest.Title = $"older-{Guid.NewGuid():N}";
+        await Data.CreateAsync(olderRequest);
+        var latestRequest = TicketData.NewTicket();
+        latestRequest.Title = $"latest-{Guid.NewGuid():N}";
+        await Data.CreateAsync(latestRequest);
+        await Tickets.OpenAsync();
+        await Expect(Tickets.TicketLink(olderRequest.Title)).ToBeVisibleAsync();
+
+        var held = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var delivered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        await Page.RouteAsync("**/api/tickets?**", async route =>
+        {
+            var response = await route.FetchAsync();
+            if (route.Request.Url.Contains(olderRequest.Title, StringComparison.Ordinal))
+            {
+                held.TrySetResult();
+                await release.Task.WaitAsync(TimeSpan.FromSeconds(15));
+                await route.FulfillAsync(new() { Response = response });
+                delivered.TrySetResult();
+            }
+            else
+            {
+                await route.FulfillAsync(new() { Response = response });
+            }
+        });
+
+        try
+        {
+            await Tickets.FilterAsync(olderRequest.Title);
+            await held.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            await Tickets.FilterAsync(latestRequest.Title);
+            await Expect(Tickets.TicketLinks).ToHaveTextAsync(new[] { latestRequest.Title });
+
+            release.TrySetResult();
+            await delivered.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+            await Expect(Tickets.TicketLinks).ToHaveTextAsync(new[] { latestRequest.Title });
+        }
+        finally
+        {
+            release.TrySetResult();
+        }
     }
 
     [Test]

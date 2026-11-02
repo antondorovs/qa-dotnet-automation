@@ -5,6 +5,7 @@ const localDateTimeFormatter = new Intl.DateTimeFormat(undefined, {
 });
 let currentTicket = null;
 let editingId = null;
+let ticketListRequestId = 0;
 
 async function request(path, options = {}) {
   const response = await fetch(path, {
@@ -37,6 +38,7 @@ function showView(view) {
 }
 
 async function loadTickets() {
+  const requestId = ++ticketListRequestId;
   const query = new URLSearchParams({
     search: byId("search").value,
     priority: byId("filter-priority").value,
@@ -44,6 +46,7 @@ async function loadTickets() {
     sort: byId("sort").value,
   });
   const tickets = await request(`/api/tickets?${query}`);
+  if (requestId !== ticketListRequestId) return;
   const rows = byId("ticket-rows");
   rows.replaceChildren();
   for (const ticket of tickets) {
