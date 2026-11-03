@@ -45,7 +45,13 @@ async function loadTickets() {
     status: byId("filter-status").value,
     sort: byId("sort").value,
   });
-  const tickets = await request(`/api/tickets?${query}`);
+  let tickets;
+  try {
+    tickets = await request(`/api/tickets?${query}`);
+  } catch (error) {
+    if (requestId !== ticketListRequestId) return;
+    throw error;
+  }
   if (requestId !== ticketListRequestId) return;
   const rows = byId("ticket-rows");
   rows.replaceChildren();

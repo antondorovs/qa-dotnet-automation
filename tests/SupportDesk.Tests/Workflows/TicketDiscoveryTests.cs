@@ -46,8 +46,9 @@ public class TicketDiscoveryTests : UiTest
         await Expect(Tickets.TicketLink(unrelated.Title)).ToHaveCountAsync(0);
     }
 
-    [Test]
-    public async Task SlowPreviousSearchCannotReplaceTheLatestResults()
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task SlowPreviousSearchCannotReplaceLatestResultsOrShowStaleError(bool olderRequestFails)
     {
         var olderRequest = TicketData.NewTicket();
         olderRequest.Title = $"older-{Guid.NewGuid():N}";
@@ -68,7 +69,19 @@ public class TicketDiscoveryTests : UiTest
             {
                 held.TrySetResult();
                 await release.Task.WaitAsync(TimeSpan.FromSeconds(15));
-                await route.FulfillAsync(new() { Response = response });
+                if (olderRequestFails)
+                {
+                    await route.FulfillAsync(new()
+                    {
+                        Status = 503,
+                        ContentType = "application/json",
+                        Body = "{\"error\":\"Earlier search failed.\"}"
+                    });
+                }
+                else
+                {
+                    await route.FulfillAsync(new() { Response = response });
+                }
                 delivered.TrySetResult();
             }
             else
@@ -89,11 +102,32 @@ public class TicketDiscoveryTests : UiTest
             await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
             await Expect(Tickets.TicketLinks).ToHaveTextAsync(new[] { latestRequest.Title });
+            await Expect(Page.GetByRole(AriaRole.Alert)).ToBeHiddenAsync();
         }
         finally
         {
             release.TrySetResult();
         }
+    }
+
+    [Test]
+    public async Task LatestSearchFailureIsStillReported()
+    {
+        var ticket = await Data.CreateAsync(TicketData.NewTicket());
+        await Tickets.OpenAsync();
+        await Expect(Tickets.TicketLink(ticket.Title)).ToBeVisibleAsync();
+        await Page.RouteAsync("**/api/tickets?**", route => route.FulfillAsync(new()
+        {
+            Status = 503,
+            ContentType = "application/json",
+            Body = "{\"error\":\"Search is temporarily unavailable.\"}"
+        }));
+
+        await Tickets.FilterAsync(ticket.Title);
+
+        var error = Page.GetByRole(AriaRole.Alert);
+        await Expect(error).ToBeVisibleAsync();
+        await Expect(error).ToHaveTextAsync("Search is temporarily unavailable.");
     }
 
     [Test]
