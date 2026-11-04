@@ -130,6 +130,30 @@ public class TicketDiscoveryTests : UiTest
         await Expect(error).ToHaveTextAsync("Search is temporarily unavailable.");
     }
 
+    [TestCase(503, "text/plain", "Service unavailable.", "The request could not be completed.")]
+    [TestCase(502, "text/html", "<html>Bad gateway.</html>", "The request could not be completed.")]
+    [TestCase(200, "application/json", "{", "The server returned an invalid response.")]
+    public async Task MalformedServerResponsesShowReadableErrors(
+        int status, string contentType, string body, string expectedError)
+    {
+        var ticket = await Data.CreateAsync(TicketData.NewTicket());
+        await Tickets.OpenAsync();
+        await Expect(Tickets.TicketLink(ticket.Title)).ToBeVisibleAsync();
+        await Page.RouteAsync("**/api/tickets?**", route => route.FulfillAsync(new()
+        {
+            Status = status,
+            ContentType = contentType,
+            Body = body
+        }));
+
+        await Tickets.FilterAsync(ticket.Title);
+
+        var error = Page.GetByRole(AriaRole.Alert);
+        await Expect(error).ToBeVisibleAsync();
+        await Expect(error).ToHaveTextAsync(expectedError);
+        await Expect(Tickets.TicketLink(ticket.Title)).ToBeVisibleAsync();
+    }
+
     [Test]
     public async Task SearchFindsTextInTheTicketDescription()
     {

@@ -13,7 +13,16 @@ async function request(path, options = {}) {
     headers: { "Content-Type": "application/json", ...options.headers },
   });
   if (response.status === 204) return null;
-  const body = await response.json();
+  let body;
+  try {
+    body = await response.json();
+  } catch {
+    throw new Error(
+      response.ok
+        ? "The server returned an invalid response."
+        : "The request could not be completed.",
+    );
+  }
   if (!response.ok) {
     const errors = body.errors
       ? Object.values(body.errors).flat().join(" ")
