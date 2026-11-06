@@ -295,6 +295,51 @@ public class TicketApiTests : ApiTest
         }
     }
 
+    [TestCase("Open", "InProgress")]
+    [TestCase("InProgress", "Resolved")]
+    public async Task ConcurrentStatusChangesAdvanceWorkflowOnlyOnce(string initialStatus, string nextStatus)
+    {
+        var ticket = await Data.CreateAsync(TicketData.NewTicket());
+        if (initialStatus == "InProgress")
+        {
+            using var started = await Api.ChangeStatusAsync(ticket.Id, initialStatus);
+            Assert.That(started.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        }
+        using var comment = await Api.AddCommentAsync(ticket.Id, "Preserve the discussion during concurrent updates.");
+        Assert.That(comment.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+
+        var responses = await Task.WhenAll(
+            Api.ChangeStatusAsync(ticket.Id, nextStatus),
+            Api.ChangeStatusAsync(ticket.Id, nextStatus));
+        using var first = responses[0];
+        using var second = responses[1];
+        Assert.That(responses.Select(response => response.StatusCode),
+            Is.EquivalentTo(new[] { HttpStatusCode.OK, HttpStatusCode.Conflict }));
+        var accepted = await responses.Single(response => response.StatusCode == HttpStatusCode.OK)
+            .Content.ReadFromJsonAsync<TicketResponse>()
+            ?? throw new AssertionException("Status response was empty.");
+        using var error = JsonDocument.Parse(await responses.Single(response => response.StatusCode == HttpStatusCode.Conflict)
+            .Content.ReadAsStringAsync());
+        Assert.That(error.RootElement.GetProperty("error").GetString(), Is.EqualTo("Status transition is not allowed."));
+
+        using var savedResponse = await Api.GetAsync(ticket.Id);
+        Assert.That(savedResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        var saved = await savedResponse.Content.ReadFromJsonAsync<TicketResponse>()
+            ?? throw new AssertionException("Get response was empty.");
+        foreach (var result in new[] { accepted, saved })
+        {
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(result.Id, Is.EqualTo(ticket.Id));
+                Assert.That(result.Status, Is.EqualTo(nextStatus));
+                Assert.That(result.CommentCount, Is.EqualTo(1));
+            }
+        }
+        var database = new TicketDatabase(Settings.DatabaseConnection);
+        Assert.That(await database.GetStatusAsync(ticket.Id), Is.EqualTo(nextStatus));
+        Assert.That(await database.CountCommentsAsync(ticket.Id), Is.EqualTo(1));
+    }
+
     [Test]
     public async Task FiltersIgnoreCaseAndSurroundingSpaces()
     {

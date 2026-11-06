@@ -1,8 +1,8 @@
 # QA .NET Workflows
 
 C# automation for Support Desk: prepare tickets through API, act in the browser,
-verify saved state through API and PostgreSQL. The suite has 64 scenarios:
-35 API, 3 UI and 26 mixed workflows. Chromium is the default browser; tests run sequentially without retries.
+verify saved state through API and PostgreSQL. The suite has 66 scenarios:
+37 API, 3 UI and 26 mixed workflows. Chromium is the default browser; tests run sequentially without retries.
 
 ## Stack and structure
 
@@ -24,6 +24,8 @@ API boundary checks accept trimmed titles of 1 and 120 characters with empty or
 Status changes follow `Open → InProgress → Resolved`; invalid transitions return `409`.
 All seven disallowed transitions, including repeated states and reopening resolved tickets,
 are checked for preservation of ticket fields and the existing discussion.
+Concurrent duplicate requests for either allowed status change produce one success
+and one conflict; API and PostgreSQL checks confirm the final status and comment count.
 Invalid input returns `400` with field errors and must not insert a row.
 Invalid ticket updates return field errors and preserve all previously saved ticket fields.
 Valid updates trim the title and description while preserving the ticket's identity,
