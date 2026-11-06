@@ -203,11 +203,32 @@ public class TicketApiTests : ApiTest
         Assert.That(body.RootElement.GetProperty("error").GetString(), Is.EqualTo("Ticket not found."));
     }
 
-    [Test]
-    public async Task OpenTicketCannotSkipInProgress()
+    [TestCase("Open", "Open")]
+    [TestCase("Open", "Resolved")]
+    [TestCase("InProgress", "Open")]
+    [TestCase("InProgress", "InProgress")]
+    [TestCase("Resolved", "Open")]
+    [TestCase("Resolved", "InProgress")]
+    [TestCase("Resolved", "Resolved")]
+    public async Task RejectedStatusTransitionPreservesTicketAndDiscussion(string initialStatus, string requestedStatus)
     {
-        var ticket = await Data.CreateAsync(TicketData.NewTicket());
-        using var changed = await Api.ChangeStatusAsync(ticket.Id, "Resolved");
+        var ticket = await Data.CreateAsync(TicketData.NewTicket("High"));
+        if (initialStatus is "InProgress" or "Resolved")
+        {
+            using var started = await Api.ChangeStatusAsync(ticket.Id, "InProgress");
+            Assert.That(started.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        }
+        if (initialStatus == "Resolved")
+        {
+            using var resolved = await Api.ChangeStatusAsync(ticket.Id, "Resolved");
+            Assert.That(resolved.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        }
+        using var commentResponse = await Api.AddCommentAsync(ticket.Id, "Keep the investigation history.");
+        Assert.That(commentResponse.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+        var comment = await commentResponse.Content.ReadFromJsonAsync<CommentResponse>()
+            ?? throw new AssertionException("Create comment response was empty.");
+
+        using var changed = await Api.ChangeStatusAsync(ticket.Id, requestedStatus);
         Assert.That(changed.StatusCode, Is.EqualTo(HttpStatusCode.Conflict));
         using var error = JsonDocument.Parse(await changed.Content.ReadAsStringAsync());
         Assert.That(error.RootElement.GetProperty("error").GetString(), Is.EqualTo("Status transition is not allowed."));
@@ -216,7 +237,24 @@ public class TicketApiTests : ApiTest
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
         var saved = await response.Content.ReadFromJsonAsync<TicketResponse>()
             ?? throw new AssertionException("Get response was empty.");
-        Assert.That(saved.Status, Is.EqualTo("Open"));
+        using var commentsResponse = await Api.GetCommentsAsync(ticket.Id);
+        Assert.That(commentsResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        var comments = await commentsResponse.Content.ReadFromJsonAsync<List<CommentResponse>>()
+            ?? throw new AssertionException("Comments response was empty.");
+        Assert.That(comments, Has.Count.EqualTo(1));
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(saved.Id, Is.EqualTo(ticket.Id));
+            Assert.That(saved.Title, Is.EqualTo(ticket.Title));
+            Assert.That(saved.Description, Is.EqualTo(ticket.Description));
+            Assert.That(saved.Priority, Is.EqualTo(ticket.Priority));
+            Assert.That(saved.Status, Is.EqualTo(initialStatus));
+            Assert.That(saved.CreatedAt, Is.EqualTo(ticket.CreatedAt));
+            Assert.That(saved.CommentCount, Is.EqualTo(1));
+            Assert.That(comments[0].Id, Is.EqualTo(comment.Id));
+            Assert.That(comments[0].Body, Is.EqualTo(comment.Body));
+            Assert.That(comments[0].CreatedAt, Is.EqualTo(comment.CreatedAt));
+        }
     }
 
     [Test]
