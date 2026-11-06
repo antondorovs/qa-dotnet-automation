@@ -55,6 +55,44 @@ public class TicketApiTests : ApiTest
         }
     }
 
+    [TestCase(1, 0, "Low")]
+    [TestCase(120, 2000, "High")]
+    public async Task TicketLengthBoundariesAreAcceptedAndPersisted(int titleLength, int descriptionLength, string priority)
+    {
+        var title = new string('t', titleLength);
+        var description = new string('d', descriptionLength);
+        var request = new CreateTicketRequest
+        {
+            Title = $" \t{title}\r\n ",
+            Description = description,
+            Priority = priority
+        };
+        using var response = await Api.CreateAsync(request);
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+        var created = await response.Content.ReadFromJsonAsync<TicketResponse>()
+            ?? throw new AssertionException("Create response was empty.");
+        Data.Track(created.Id);
+        using var savedResponse = await Api.GetAsync(created.Id);
+        Assert.That(savedResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        var saved = await savedResponse.Content.ReadFromJsonAsync<TicketResponse>()
+            ?? throw new AssertionException("Get response was empty.");
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(created.Id, Is.Not.EqualTo(Guid.Empty));
+            Assert.That(response.Headers.Location?.OriginalString, Is.EqualTo($"/api/tickets/{created.Id}"));
+            Assert.That(saved.Id, Is.EqualTo(created.Id));
+            foreach (var ticket in new[] { created, saved })
+            {
+                Assert.That(ticket.Title, Is.EqualTo(title));
+                Assert.That(ticket.Description, Is.EqualTo(description));
+                Assert.That(ticket.Priority, Is.EqualTo(priority));
+                Assert.That(ticket.Status, Is.EqualTo("Open"));
+                Assert.That(ticket.CommentCount, Is.Zero);
+            }
+        }
+    }
+
     [Test]
     public async Task TicketCreationTimeIsConsistentAcrossResponses()
     {

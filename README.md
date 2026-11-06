@@ -1,8 +1,8 @@
 # QA .NET Workflows
 
 C# automation for Support Desk: prepare tickets through API, act in the browser,
-verify saved state through API and PostgreSQL. The suite has 62 scenarios:
-33 API, 3 UI and 26 mixed workflows. Chromium is the default browser; tests run sequentially without retries.
+verify saved state through API and PostgreSQL. The suite has 64 scenarios:
+35 API, 3 UI and 26 mixed workflows. Chromium is the default browser; tests run sequentially without retries.
 
 ## Stack and structure
 
@@ -19,6 +19,8 @@ Npgsql, Allure, Docker Compose, GitHub Actions and GitLab CI.
 | `database/`, `docker/`, `scripts/`                                 | Schema, test image and execution commands                       |
 
 Titles contain 1–120 characters; priorities are `Low`, `Normal`, `High`.
+API boundary checks accept trimmed titles of 1 and 120 characters with empty or
+2000-character descriptions and verify the created and persisted values.
 Status changes follow `Open → InProgress → Resolved`; invalid transitions return `409`.
 All seven disallowed transitions, including repeated states and reopening resolved tickets,
 are checked for preservation of ticket fields and the existing discussion.
