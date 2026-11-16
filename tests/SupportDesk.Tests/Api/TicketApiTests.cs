@@ -356,6 +356,24 @@ public class TicketApiTests : ApiTest
     }
 
     [Test]
+    public async Task SearchMatchesDescriptionsAcrossCaseAndTrimsTheQuery()
+    {
+        var marker = $"Shipment {Guid.NewGuid():N}";
+        var matchRequest = TicketData.NewTicket();
+        matchRequest.Description = $"Follow up about {marker} tomorrow.";
+        var match = await Data.CreateAsync(matchRequest);
+        var unrelatedRequest = TicketData.NewTicket();
+        unrelatedRequest.Description = "Follow up about a different shipment tomorrow.";
+        await Data.CreateAsync(unrelatedRequest);
+
+        using var response = await Api.ListAsync($"  {marker.ToUpperInvariant()}  ", "", "");
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        var results = await response.Content.ReadFromJsonAsync<List<TicketResponse>>()
+            ?? throw new AssertionException("List response was empty.");
+        Assert.That(results.Select(ticket => ticket.Id), Is.EqualTo(new[] { match.Id }));
+    }
+
+    [Test]
     public async Task PrioritySortPlacesUrgentTicketsFirst()
     {
         var marker = $"Priority order {Guid.NewGuid():N}";
