@@ -356,6 +356,37 @@ public class TicketApiTests : ApiTest
     }
 
     [Test]
+    public async Task ListRequiresTicketsToMatchAllActiveFilters()
+    {
+        var marker = $"Combined filters {Guid.NewGuid():N}";
+        var matchRequest = TicketData.NewTicket("High");
+        matchRequest.Title = $"{marker} expected";
+        var match = await Data.CreateAsync(matchRequest);
+
+        var otherPriorityRequest = TicketData.NewTicket("Low");
+        otherPriorityRequest.Title = $"{marker} different priority";
+        var otherPriority = await Data.CreateAsync(otherPriorityRequest);
+
+        var otherStatusRequest = TicketData.NewTicket("High");
+        otherStatusRequest.Title = $"{marker} different status";
+        await Data.CreateAsync(otherStatusRequest);
+
+        var otherTitle = await Data.CreateAsync(TicketData.NewTicket("High"));
+        foreach (var ticket in new[] { match, otherPriority, otherTitle })
+        {
+            using var changed = await Api.ChangeStatusAsync(ticket.Id, "InProgress");
+            Assert.That(changed.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        }
+
+        using var response = await Api.ListAsync(marker, "High", "InProgress");
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        var results = await response.Content.ReadFromJsonAsync<List<TicketResponse>>()
+            ?? throw new AssertionException("List response was empty.");
+
+        Assert.That(results.Select(ticket => ticket.Id), Is.EqualTo(new[] { match.Id }));
+    }
+
+    [Test]
     public async Task SearchMatchesDescriptionsAcrossCaseAndTrimsTheQuery()
     {
         var marker = $"Shipment {Guid.NewGuid():N}";
