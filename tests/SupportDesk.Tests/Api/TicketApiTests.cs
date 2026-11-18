@@ -404,6 +404,35 @@ public class TicketApiTests : ApiTest
         Assert.That(results.Select(ticket => ticket.Id), Is.EqualTo(new[] { match.Id }));
     }
 
+    [TestCase("%")]
+    [TestCase("_")]
+    public async Task SearchTreatsWildcardCharactersAsLiteralText(string character)
+    {
+        var marker = $"Literal {Guid.NewGuid():N}";
+        var query = $"{marker}{character}end";
+        var titleRequest = TicketData.NewTicket();
+        titleRequest.Title = query;
+        var titleMatch = await Data.CreateAsync(titleRequest);
+        var descriptionRequest = TicketData.NewTicket();
+        descriptionRequest.Description = $"Follow up about {query} tomorrow.";
+        var descriptionMatch = await Data.CreateAsync(descriptionRequest);
+
+        var otherTitleRequest = TicketData.NewTicket();
+        otherTitleRequest.Title = $"{marker}xend";
+        await Data.CreateAsync(otherTitleRequest);
+        var otherDescriptionRequest = TicketData.NewTicket();
+        otherDescriptionRequest.Description = $"Follow up about {marker}xend tomorrow.";
+        await Data.CreateAsync(otherDescriptionRequest);
+
+        using var response = await Api.ListAsync(query, "", "");
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        var results = await response.Content.ReadFromJsonAsync<List<TicketResponse>>()
+            ?? throw new AssertionException("List response was empty.");
+
+        Assert.That(results.Select(ticket => ticket.Id),
+            Is.EquivalentTo(new[] { titleMatch.Id, descriptionMatch.Id }));
+    }
+
     [Test]
     public async Task PrioritySortPlacesUrgentTicketsFirst()
     {
