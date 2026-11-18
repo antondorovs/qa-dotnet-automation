@@ -485,6 +485,46 @@ public class TicketApiTests : ApiTest
     }
 
     [Test]
+    public async Task CommentSortBreaksTiesByTitleAndUpdatesAfterNewComments()
+    {
+        var marker = $"Discussion order {Guid.NewGuid():N}";
+        var quietRequest = TicketData.NewTicket();
+        quietRequest.Title = $"{marker} 0 quiet";
+        var quiet = await Data.CreateAsync(quietRequest);
+        var firstRequest = TicketData.NewTicket();
+        firstRequest.Title = $"{marker} A discussion";
+        var first = await Data.CreateAsync(firstRequest);
+        var lastRequest = TicketData.NewTicket();
+        lastRequest.Title = $"{marker} Z discussion";
+        var last = await Data.CreateAsync(lastRequest);
+
+        foreach (var ticket in new[] { last, first })
+        {
+            using var comment = await Api.AddCommentAsync(ticket.Id, "Investigation has started.");
+            Assert.That(comment.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+        }
+
+        using var initialResponse = await Api.ListAsync(marker, "", "", "comments");
+        Assert.That(initialResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        var initial = await initialResponse.Content.ReadFromJsonAsync<List<TicketResponse>>()
+            ?? throw new AssertionException("Initial list response was empty.");
+        Assert.That(initial.Select(ticket => ticket.Id),
+            Is.EqualTo(new[] { first.Id, last.Id, quiet.Id }));
+        Assert.That(initial.Select(ticket => ticket.CommentCount), Is.EqualTo(new[] { 1, 1, 0 }));
+
+        using var added = await Api.AddCommentAsync(last.Id, "Customer supplied additional information.");
+        Assert.That(added.StatusCode, Is.EqualTo(HttpStatusCode.Created));
+
+        using var updatedResponse = await Api.ListAsync(marker, "", "", "comments");
+        Assert.That(updatedResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        var updated = await updatedResponse.Content.ReadFromJsonAsync<List<TicketResponse>>()
+            ?? throw new AssertionException("Updated list response was empty.");
+        Assert.That(updated.Select(ticket => ticket.Id),
+            Is.EqualTo(new[] { last.Id, first.Id, quiet.Id }));
+        Assert.That(updated.Select(ticket => ticket.CommentCount), Is.EqualTo(new[] { 2, 1, 0 }));
+    }
+
+    [Test]
     public async Task NewestSortPlacesRecentlyCreatedTicketsFirst()
     {
         var marker = $"Creation order {Guid.NewGuid():N}";
