@@ -233,6 +233,27 @@ public class TicketApiTests : ApiTest
     }
 
     [Test]
+    public async Task UpdatingDeletedTicketDoesNotRecreateIt()
+    {
+        var ticket = await Data.CreateAsync(TicketData.NewTicket());
+        using var deleted = await Api.DeleteAsync(ticket.Id);
+        Assert.That(deleted.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
+
+        var edit = TicketData.NewTicket("High");
+        edit.Description = $"Edit after deletion {Guid.NewGuid():N}";
+        using var response = await Api.UpdateAsync(ticket.Id, edit);
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.That(body.RootElement.GetProperty("error").GetString(), Is.EqualTo("Ticket not found."));
+
+        using var saved = await Api.GetAsync(ticket.Id);
+        Assert.That(saved.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
+        var database = new TicketDatabase(Settings.DatabaseConnection);
+        Assert.That(await database.GetStatusAsync(ticket.Id), Is.Null);
+        Assert.That(await database.CountByDescriptionAsync(edit.Description), Is.Zero);
+    }
+
+    [Test]
     public async Task UnknownTicketReturnsNotFound()
     {
         using var response = await Api.GetAsync(Guid.NewGuid());
